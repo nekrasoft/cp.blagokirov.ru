@@ -23,6 +23,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use UnitEnum;
 
 class CounterpartyUserResource extends Resource
 {
@@ -36,7 +37,7 @@ class CounterpartyUserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Пользователи контрагентов';
 
-    protected static ?string $navigationGroup = 'Карта бункеров';
+    protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
 
     public static function form(Schema $schema): Schema
     {
