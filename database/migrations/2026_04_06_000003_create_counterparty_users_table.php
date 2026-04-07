@@ -17,10 +17,12 @@ return new class extends Migration
             $table->string('login', 191)->unique();
             $table->string('password_hash');
             $table->unsignedInteger('counterparty_id');
+            $table->string('district_scope', 255)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
             $table->index('counterparty_id');
+            $table->index('district_scope');
             $table->index('is_active');
         });
     }

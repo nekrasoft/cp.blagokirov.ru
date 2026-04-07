@@ -13,6 +13,7 @@ class CounterpartyUser extends Model
         'login',
         'password_hash',
         'counterparty_id',
+        'district_scope',
         'is_active',
     ];
 
@@ -30,4 +31,3 @@ class CounterpartyUser extends Model
         return $this->belongsTo(Counterparty::class, 'counterparty_id');
     }
 }
-

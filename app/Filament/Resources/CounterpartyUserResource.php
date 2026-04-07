@@ -70,6 +70,11 @@ class CounterpartyUserResource extends Resource
                     ->searchable()
                     ->preload()
                     ->required(),
+                TextInput::make('district_scope')
+                    ->label('Районный фильтр')
+                    ->maxLength(255)
+                    ->placeholder('Инноград')
+                    ->helperText('Опционально. Для нескольких значений: Инноград, Знак'),
                 Toggle::make('is_active')
                     ->label('Активен')
                     ->default(true)
@@ -95,6 +100,10 @@ class CounterpartyUserResource extends Resource
                     ->label('Полное наименование')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('district_scope')
+                    ->label('Районный фильтр')
+                    ->searchable()
+                    ->toggleable(),
                 IconColumn::make('is_active')
                     ->label('Активен')
                     ->boolean()
@@ -109,6 +118,11 @@ class CounterpartyUserResource extends Resource
                 TernaryFilter::make('is_active')
                     ->label('Активность')
                     ->boolean(),
+                TernaryFilter::make('district_scope')
+                    ->label('Районный фильтр')
+                    ->nullable()
+                    ->trueLabel('Задан')
+                    ->falseLabel('Не задан'),
             ])
             ->recordActions([
                 EditAction::make(),
