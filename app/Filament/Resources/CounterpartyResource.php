@@ -6,7 +6,9 @@ use App\Filament\Resources\CounterpartyResource\Pages\CreateCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\EditCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\ListCounterparties;
 use App\Models\Counterparty;
+use App\Models\CounterpartyUser;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -148,6 +150,11 @@ class CounterpartyResource extends Resource
         ];
     }
 
+    public static function canAccess(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canAccess();
+    }
+
     protected static function hasColumn(string $column): bool
     {
         if (array_key_exists($column, static::$hasColumnCache)) {
@@ -161,5 +168,10 @@ class CounterpartyResource extends Resource
         }
 
         return static::$hasColumnCache[$column];
+    }
+
+    protected static function isCounterpartyAuthenticated(): bool
+    {
+        return Filament::auth()->user() instanceof CounterpartyUser;
     }
 }

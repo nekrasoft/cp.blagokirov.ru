@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
+use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -22,6 +24,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 use UnitEnum;
@@ -235,6 +238,42 @@ class InvoiceResource extends Resource
         return static::hasTable() && parent::canAccess();
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $counterpartyUser = static::getAuthenticatedCounterpartyUser();
+
+        if (! $counterpartyUser) {
+            return $query;
+        }
+
+        if (! static::hasColumn('counterparty_id')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('counterparty_id', $counterpartyUser->counterparty_id);
+    }
+
+    public static function canCreate(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+    }
+
     protected static function hasTable(): bool
     {
         if (static::$hasTableCache !== null) {
@@ -297,5 +336,16 @@ class InvoiceResource extends Resource
 
         return static::$hasCounterpartyColumnCache['title_attribute'] ? 'short_name' : 'name';
     }
-}
 
+    protected static function isCounterpartyAuthenticated(): bool
+    {
+        return static::getAuthenticatedCounterpartyUser() !== null;
+    }
+
+    protected static function getAuthenticatedCounterpartyUser(): ?CounterpartyUser
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof CounterpartyUser ? $user : null;
+    }
+}

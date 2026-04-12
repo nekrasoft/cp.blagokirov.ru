@@ -7,6 +7,7 @@ use App\Filament\Resources\CounterpartyUserResource\Pages\EditCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\ListCounterpartyUsers;
 use App\Models\CounterpartyUser;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -142,5 +143,15 @@ class CounterpartyUserResource extends Resource
             'create' => CreateCounterpartyUser::route('/create'),
             'edit' => EditCounterpartyUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function canAccess(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canAccess();
+    }
+
+    protected static function isCounterpartyAuthenticated(): bool
+    {
+        return Filament::auth()->user() instanceof CounterpartyUser;
     }
 }

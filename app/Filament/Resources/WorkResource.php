@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\WorkResource\Pages\CreateWork;
 use App\Filament\Resources\WorkResource\Pages\EditWork;
 use App\Filament\Resources\WorkResource\Pages\ListWorks;
+use App\Models\CounterpartyUser;
 use App\Models\Work;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,6 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 use UnitEnum;
@@ -226,6 +229,72 @@ class WorkResource extends Resource
         return static::hasTable() && parent::canAccess();
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $counterpartyUser = static::getAuthenticatedCounterpartyUser();
+
+        if (! $counterpartyUser) {
+            return $query;
+        }
+
+        $counterpartyId = (int) $counterpartyUser->counterparty_id;
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $hasInvoiceColumn = static::hasColumn('invoice_id');
+        $hasInvoiceScope = $hasInvoiceColumn && static::hasInvoicesTable();
+        $counterpartyNames = static::resolveCounterpartyNames($counterpartyUser);
+        $hasNameScope = static::hasColumn('counterparty_name') && $counterpartyNames !== [];
+
+        if (! $hasInvoiceScope && ! $hasNameScope) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $hasInvoiceColumn, $counterpartyNames): void {
+            if ($hasInvoiceScope) {
+                $scopeQuery->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('counterparty_id', $counterpartyId));
+            }
+
+            if ($hasNameScope) {
+                $nameScope = function (Builder $nameQuery) use ($hasInvoiceColumn, $counterpartyNames): void {
+                    if ($hasInvoiceColumn) {
+                        $nameQuery->whereNull('invoice_id');
+                    }
+
+                    $nameQuery->whereIn('counterparty_name', $counterpartyNames);
+                };
+
+                if ($hasInvoiceScope) {
+                    $scopeQuery->orWhere($nameScope);
+                } else {
+                    $scopeQuery->where($nameScope);
+                }
+            }
+        });
+    }
+
+    public static function canCreate(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+    }
+
     protected static function hasTable(): bool
     {
         if (static::$hasTableCache !== null) {
@@ -264,5 +333,40 @@ class WorkResource extends Resource
             return false;
         }
     }
-}
 
+    protected static function isCounterpartyAuthenticated(): bool
+    {
+        return static::getAuthenticatedCounterpartyUser() !== null;
+    }
+
+    protected static function getAuthenticatedCounterpartyUser(): ?CounterpartyUser
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof CounterpartyUser ? $user : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function resolveCounterpartyNames(CounterpartyUser $counterpartyUser): array
+    {
+        $names = [
+            $counterpartyUser->counterparty?->short_name,
+            $counterpartyUser->counterparty?->name,
+        ];
+
+        $normalized = [];
+
+        foreach ($names as $name) {
+            $name = trim((string) $name);
+            if ($name === '') {
+                continue;
+            }
+
+            $normalized[$name] = true;
+        }
+
+        return array_keys($normalized);
+    }
+}
