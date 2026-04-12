@@ -12,9 +12,10 @@ class ListInvoices extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            CreateAction::make(),
-        ];
+        if (! InvoiceResource::canCreate()) {
+            return [];
+        }
+
+        return [CreateAction::make()];
     }
 }
-

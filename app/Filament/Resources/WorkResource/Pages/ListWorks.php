@@ -12,9 +12,10 @@ class ListWorks extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            CreateAction::make(),
-        ];
+        if (! WorkResource::canCreate()) {
+            return [];
+        }
+
+        return [CreateAction::make()];
     }
 }
-

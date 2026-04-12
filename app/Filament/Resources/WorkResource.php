@@ -89,7 +89,7 @@ class WorkResource extends Resource
 
         if (static::hasColumn('revenue')) {
             $components[] = TextInput::make('revenue')
-                ->label('Выручка')
+                ->label('Сумма')
                 ->numeric()
                 ->inputMode('decimal');
         }
@@ -120,6 +120,7 @@ class WorkResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
         if (static::hasColumn('id')) {
@@ -135,7 +136,7 @@ class WorkResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('counterparty_name')) {
+        if (! $isCounterparty && static::hasColumn('counterparty_name')) {
             $columns[] = TextColumn::make('counterparty_name')
                 ->label('Контрагент')
                 ->searchable()
@@ -143,11 +144,16 @@ class WorkResource extends Resource
         }
 
         if (static::hasColumn('operation')) {
-            $columns[] = TextColumn::make('operation')
+            $operationColumn = TextColumn::make('operation')
                 ->label('Операция')
                 ->searchable()
-                ->sortable()
-                ->toggleable();
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $operationColumn->toggleable();
+            }
+
+            $columns[] = $operationColumn;
         }
 
         if (static::hasColumn('object_count')) {
@@ -158,31 +164,44 @@ class WorkResource extends Resource
 
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
-                ->label('Выручка')
+                ->label('Сумма')
                 ->numeric(decimalPlaces: 2)
                 ->sortable();
         }
 
         if (static::hasColumn('invoice_id') && static::hasInvoicesTable()) {
-            $columns[] = TextColumn::make('invoice.invoice_number')
+            $invoiceColumn = TextColumn::make('invoice.invoice_number')
                 ->label('Счёт')
                 ->searchable()
-                ->sortable()
-                ->toggleable();
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $invoiceColumn->toggleable();
+            }
+
+            $columns[] = $invoiceColumn;
         }
 
-        if (static::hasColumn('sheet_row_hash')) {
-            $columns[] = TextColumn::make('sheet_row_hash')
-                ->label('Хеш строки')
-                ->toggleable(isToggledHiddenByDefault: true);
+        if (! $isCounterparty && static::hasColumn('sheet_row_hash')) {
+            $sheetHashColumn = TextColumn::make('sheet_row_hash')
+                ->label('Хеш строки');
+
+            $sheetHashColumn->toggleable(isToggledHiddenByDefault: true);
+
+            $columns[] = $sheetHashColumn;
         }
 
         if (static::hasColumn('created_at')) {
-            $columns[] = TextColumn::make('created_at')
+            $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создано')
                 ->dateTime('d.m.Y H:i')
-                ->sortable()
-                ->toggleable();
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $createdAtColumn->toggleable();
+            }
+
+            $columns[] = $createdAtColumn;
         }
 
         $filters = [];
@@ -195,19 +214,28 @@ class WorkResource extends Resource
                 ->falseLabel('Без счёта');
         }
 
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (! $isCounterparty) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
+        }
+
         return $table
             ->defaultSort(static::hasColumn('date') ? 'date' : (static::hasColumn('id') ? 'id' : 'counterparty_name'), 'desc')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array

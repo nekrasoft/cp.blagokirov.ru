@@ -110,6 +110,7 @@ class InvoiceResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
         if (static::hasColumn('id')) {
@@ -126,7 +127,7 @@ class InvoiceResource extends Resource
                 ->copyable();
         }
 
-        if (static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
+        if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
@@ -161,11 +162,16 @@ class InvoiceResource extends Resource
         }
 
         if (static::hasColumn('pdf_url')) {
-            $columns[] = TextColumn::make('pdf_url')
+            $pdfColumn = TextColumn::make('pdf_url')
                 ->label('PDF')
                 ->url(fn (?string $state): ?string => $state ?: null, shouldOpenInNewTab: true)
-                ->limit(50)
-                ->toggleable();
+                ->limit(50);
+
+            if (! $isCounterparty) {
+                $pdfColumn->toggleable();
+            }
+
+            $columns[] = $pdfColumn;
         }
 
         if (static::hasWorksTable()) {
@@ -176,11 +182,16 @@ class InvoiceResource extends Resource
         }
 
         if (static::hasColumn('created_at')) {
-            $columns[] = TextColumn::make('created_at')
+            $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создан')
                 ->dateTime('d.m.Y H:i')
-                ->sortable()
-                ->toggleable();
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $createdAtColumn->toggleable();
+            }
+
+            $columns[] = $createdAtColumn;
         }
 
         $filters = [];
@@ -198,25 +209,34 @@ class InvoiceResource extends Resource
                 ]);
         }
 
-        if (static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
+        if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $filters[] = SelectFilter::make('counterparty_id')
                 ->label('Контрагент')
                 ->relationship('counterparty', static::counterpartyTitleAttribute());
+        }
+
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (! $isCounterparty) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
         }
 
         return $table
             ->defaultSort(static::hasColumn('issued_at') ? 'issued_at' : (static::hasColumn('id') ? 'id' : 'invoice_number'), 'desc')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
