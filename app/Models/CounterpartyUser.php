@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CounterpartyUser extends Authenticatable implements FilamentUser
+class CounterpartyUser extends Authenticatable implements FilamentUser, HasName
 {
     protected $table = 'counterparty_users';
 
@@ -43,5 +44,22 @@ class CounterpartyUser extends Authenticatable implements FilamentUser
         return $panel->getId() === 'counterparty'
             && $this->is_active
             && $this->counterparty_id > 0;
+    }
+
+    public function getFilamentName(): string
+    {
+        $counterpartyName = trim((string) ($this->counterparty?->short_name ?? $this->counterparty?->name ?? ''));
+
+        if ($counterpartyName !== '') {
+            return $counterpartyName;
+        }
+
+        $login = trim((string) $this->login);
+
+        if ($login !== '') {
+            return $login;
+        }
+
+        return 'Контрагент #' . $this->getAuthIdentifier();
     }
 }
