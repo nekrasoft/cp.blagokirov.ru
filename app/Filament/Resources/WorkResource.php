@@ -208,15 +208,13 @@ class WorkResource extends Resource
             $columns[] = $sheetHashColumn;
         }
 
-        if (static::hasColumn('created_at')) {
+        if (! $isCounterparty && static::hasColumn('created_at')) {
             $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создано')
                 ->dateTime('d.m.Y H:i')
                 ->sortable();
 
-            if (! $isCounterparty) {
-                $createdAtColumn->toggleable();
-            }
+            $createdAtColumn->toggleable();
 
             $columns[] = $createdAtColumn;
         }
