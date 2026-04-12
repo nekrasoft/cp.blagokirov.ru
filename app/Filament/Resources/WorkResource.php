@@ -145,7 +145,8 @@ class WorkResource extends Resource
 
         if (static::hasColumn('operation')) {
             $operationColumn = TextColumn::make('operation')
-                ->label('Операция')
+                ->label('Тип операции')
+                ->formatStateUsing(fn (?string $state): string => static::resolveOperationTypeCode($state))
                 ->searchable()
                 ->sortable();
 
@@ -154,6 +155,19 @@ class WorkResource extends Resource
             }
 
             $columns[] = $operationColumn;
+        }
+
+        if (static::hasColumn('note')) {
+            $noteColumn = TextColumn::make('note')
+                ->label('Note')
+                ->searchable()
+                ->wrap();
+
+            if (! $isCounterparty) {
+                $noteColumn->toggleable();
+            }
+
+            $columns[] = $noteColumn;
         }
 
         if (static::hasColumn('object_count')) {
@@ -396,5 +410,40 @@ class WorkResource extends Resource
         }
 
         return array_keys($normalized);
+    }
+
+    protected static function resolveOperationTypeCode(?string $operation): string
+    {
+        $operation = trim((string) $operation);
+
+        if ($operation === '') {
+            return '';
+        }
+
+        $normalized = function_exists('mb_strtolower')
+            ? mb_strtolower($operation, 'UTF-8')
+            : strtolower($operation);
+
+        if ($normalized === 'container_pickup' || $normalized === 'trip_removal') {
+            return $normalized;
+        }
+
+        if (
+            str_contains($normalized, 'вывоз бункеров')
+            || str_contains($normalized, '8м3')
+            || str_contains($normalized, '8 м3')
+        ) {
+            return 'container_pickup';
+        }
+
+        if (
+            str_contains($normalized, 'вывоз мусора')
+            || str_contains($normalized, '30м3')
+            || str_contains($normalized, '30 м3')
+        ) {
+            return 'trip_removal';
+        }
+
+        return $operation;
     }
 }
