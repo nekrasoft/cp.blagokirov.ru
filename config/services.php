@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'cross_service_sso' => [
+        'secret' => env('CROSS_SERVICE_SSO_SECRET'),
+        'ttl_seconds' => (int) env('CROSS_SERVICE_SSO_TTL_SECONDS', 90),
+        'map_service_url' => env('MAP_SERVICE_URL', 'https://map.blagokirov.ru'),
+    ],
+
 ];
