@@ -44,7 +44,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ->navigationItems([
                 NavigationItem::make('Карта бункеров')
                     ->icon(Heroicon::OutlinedMap)
-                    ->url(fn (): string => route('billing.sso.map'))
+                    ->url(fn (): string => route('billing.sso.map'), true)
                     ->sort(999),
             ])
             ->middleware([

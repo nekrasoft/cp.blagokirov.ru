@@ -18,7 +18,7 @@ class CrossServiceSsoController extends Controller
         $user = Auth::guard('counterparty')->user();
 
         if (! $user instanceof CounterpartyUser || ! $user->is_active || $user->counterparty_id <= 0) {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         $mapServiceUrl = rtrim((string) config('services.cross_service_sso.map_service_url'), '/');
@@ -43,22 +43,22 @@ class CrossServiceSsoController extends Controller
     {
         $token = trim((string) $request->query('token'));
         if ($token === '') {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         try {
             $payload = CrossServiceSsoToken::validate($token, (string) config('services.cross_service_sso.secret'));
         } catch (InvalidArgumentException $e) {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         if (($payload['direction'] ?? null) !== 'map_to_cp') {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         $userId = (int) ($payload['uid'] ?? 0);
         if ($userId <= 0) {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         $user = CounterpartyUser::query()
@@ -67,17 +67,22 @@ class CrossServiceSsoController extends Controller
             ->first();
 
         if (! $user instanceof CounterpartyUser || (int) $user->counterparty_id <= 0) {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         $payloadCounterpartyId = (int) ($payload['counterparty_id'] ?? 0);
         if ($payloadCounterpartyId > 0 && $payloadCounterpartyId !== (int) $user->counterparty_id) {
-            abort(403);
+            return $this->redirectToBillingLoginWithSsoError();
         }
 
         Auth::guard('counterparty')->login($user);
         $request->session()->regenerate();
 
         return redirect()->intended(WorkResource::getUrl(null, [], true, 'counterparty'));
+    }
+
+    private function redirectToBillingLoginWithSsoError(): RedirectResponse
+    {
+        return redirect()->to('/billing/login?sso_error=403');
     }
 }
