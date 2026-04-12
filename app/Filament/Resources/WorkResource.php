@@ -186,7 +186,11 @@ class WorkResource extends Resource
             $invoiceColumn = TextColumn::make('invoice.invoice_number')
                 ->label('Счёт')
                 ->searchable()
-                ->sortable();
+                ->sortable()
+                ->url(
+                    fn (Work $record): ?string => $record->invoice?->pdf_url ?: null,
+                    shouldOpenInNewTab: true,
+                );
 
             if (! $isCounterparty) {
                 $invoiceColumn->toggleable();
