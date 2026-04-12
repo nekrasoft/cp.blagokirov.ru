@@ -3,7 +3,6 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
-use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\WorkResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -29,10 +28,6 @@ class CounterpartyPanelProvider extends PanelProvider
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
             ->homeUrl(function (): string {
-                if (InvoiceResource::shouldRegisterNavigation()) {
-                    return InvoiceResource::getUrl(panel: 'counterparty');
-                }
-
                 if (WorkResource::shouldRegisterNavigation()) {
                     return WorkResource::getUrl(panel: 'counterparty');
                 }

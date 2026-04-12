@@ -255,7 +255,9 @@ class InvoiceResource extends Resource
 
     public static function canAccess(): bool
     {
-        return static::hasTable() && parent::canAccess();
+        return static::hasTable()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canAccess();
     }
 
     public static function getEloquentQuery(): Builder
