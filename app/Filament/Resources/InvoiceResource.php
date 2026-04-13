@@ -124,6 +124,7 @@ class InvoiceResource extends Resource
                 ->label('Номер')
                 ->searchable()
                 ->sortable()
+                ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
                 ->copyable();
         }
 
@@ -153,7 +154,8 @@ class InvoiceResource extends Resource
                 ->label('Статус')
                 ->badge()
                 ->color(fn (?string $state): string => match ($state) {
-                    'issued', 'paid' => 'success',
+                    'paid' => 'success',
+                    'issued' => 'info',
                     'failed', 'cancelled' => 'danger',
                     'draft', 'pending' => 'warning',
                     default => 'gray',
@@ -196,7 +198,7 @@ class InvoiceResource extends Resource
                 ->limit(50);
 
             if (! $isCounterparty) {
-                $pdfColumn->toggleable();
+                $pdfColumn->toggleable(isToggledHiddenByDefault: true);
             }
 
             $columns[] = $pdfColumn;
@@ -216,7 +218,7 @@ class InvoiceResource extends Resource
                 ->sortable();
 
             if (! $isCounterparty) {
-                $createdAtColumn->toggleable();
+                $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
             }
 
             $columns[] = $createdAtColumn;
