@@ -20,6 +20,8 @@ class Invoice extends Model
         'due_date',
         'status',
         'pdf_url',
+        'paid_amount',
+        'paid_at',
         'created_at',
     ];
 
@@ -27,6 +29,8 @@ class Invoice extends Model
         'counterparty_id' => 'integer',
         'issued_at' => 'datetime',
         'due_date' => 'date',
+        'paid_amount' => 'decimal:2',
+        'paid_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 
@@ -40,4 +44,3 @@ class Invoice extends Model
         return $this->hasMany(Work::class, 'invoice_id');
     }
 }
-

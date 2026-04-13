@@ -161,6 +161,34 @@ class InvoiceResource extends Resource
                 ->sortable();
         }
 
+        if (static::hasColumn('paid_amount')) {
+            $paidAmountColumn = TextColumn::make('paid_amount')
+                ->label('Оплачено')
+                ->formatStateUsing(
+                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ')
+                )
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $paidAmountColumn->toggleable();
+            }
+
+            $columns[] = $paidAmountColumn;
+        }
+
+        if (static::hasColumn('paid_at')) {
+            $paidAtColumn = TextColumn::make('paid_at')
+                ->label('Оплачен')
+                ->dateTime('d.m.Y H:i')
+                ->sortable();
+
+            if (! $isCounterparty) {
+                $paidAtColumn->toggleable();
+            }
+
+            $columns[] = $paidAtColumn;
+        }
+
         if (static::hasColumn('pdf_url')) {
             $pdfColumn = TextColumn::make('pdf_url')
                 ->label('PDF')
