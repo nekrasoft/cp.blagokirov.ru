@@ -138,7 +138,7 @@ class InvoiceResource extends Resource
         if (static::hasColumn('issued_at')) {
             $columns[] = TextColumn::make('issued_at')
                 ->label('Выставлен')
-                ->dateTime('d.m.Y H:i')
+                ->date('d.m.Y')
                 ->sortable();
         }
 
@@ -181,7 +181,7 @@ class InvoiceResource extends Resource
         if (static::hasColumn('paid_at')) {
             $paidAtColumn = TextColumn::make('paid_at')
                 ->label('Оплачен')
-                ->dateTime('d.m.Y H:i')
+                ->date('d.m.Y')
                 ->sortable();
 
             if (! $isCounterparty) {
