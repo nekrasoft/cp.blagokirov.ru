@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
 use App\Filament\Resources\WorkResource;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,7 +31,16 @@ class CounterpartyPanelProvider extends PanelProvider
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
             ->homeUrl(fn (): string => WorkResource::getUrl(panel: 'counterparty'))
-            ->brandName('Биллинг')
+            ->brandName(function (): string {
+                $user = Filament::auth()->user();
+                $counterpartyName = trim((string) ($user?->counterparty?->name ?? ''));
+
+                if ($counterpartyName === '') {
+                    return 'Биллинг';
+                }
+
+                return 'Биллинг. ' . $counterpartyName;
+            })
             ->colors([
                 'primary' => Color::Blue,
             ])
