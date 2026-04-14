@@ -37,9 +37,11 @@ class FeedbackPage extends Page
     protected function getViewData(): array
     {
         $googleReviews = app(GoogleBusinessProfileReviewsService::class)->getReviews();
+        $googleReviewsEnabled = (bool) ($googleReviews['enabled'] ?? false);
+        $googleReviewsConfigured = (bool) ($googleReviews['configured'] ?? false);
 
         return [
-            'googleReviewsEnabled' => (bool) ($googleReviews['enabled'] ?? false),
+            'showGoogleReviewsSection' => $googleReviewsEnabled && $googleReviewsConfigured,
             'googleReviews' => is_array($googleReviews['reviews'] ?? null) ? $googleReviews['reviews'] : [],
             'googleReviewsError' => isset($googleReviews['error']) ? (string) $googleReviews['error'] : null,
         ];

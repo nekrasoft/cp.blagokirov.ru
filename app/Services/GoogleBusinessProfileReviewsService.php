@@ -12,7 +12,7 @@ use Throwable;
 class GoogleBusinessProfileReviewsService
 {
     /**
-     * @return array{enabled: bool, reviews: array<int, array<string, mixed>>, error: ?string}
+     * @return array{enabled: bool, configured: bool, reviews: array<int, array<string, mixed>>, error: ?string}
      */
     public function getReviews(): array
     {
@@ -21,6 +21,7 @@ class GoogleBusinessProfileReviewsService
         if (! (bool) ($config['enabled'] ?? false)) {
             return [
                 'enabled' => false,
+                'configured' => false,
                 'reviews' => [],
                 'error' => null,
             ];
@@ -35,6 +36,7 @@ class GoogleBusinessProfileReviewsService
         if ($accountPath === '' || $locationPath === '' || $clientId === '' || $clientSecret === '' || $refreshToken === '') {
             return [
                 'enabled' => true,
+                'configured' => false,
                 'reviews' => [],
                 'error' => 'Google-отзывы пока не настроены.',
             ];
@@ -79,6 +81,7 @@ class GoogleBusinessProfileReviewsService
 
             return [
                 'enabled' => true,
+                'configured' => true,
                 'reviews' => $reviews,
                 'error' => null,
             ];
@@ -87,6 +90,7 @@ class GoogleBusinessProfileReviewsService
 
             return [
                 'enabled' => true,
+                'configured' => true,
                 'reviews' => [],
                 'error' => 'Не удалось загрузить отзывы Google. Попробуйте позже.',
             ];
@@ -236,4 +240,3 @@ class GoogleBusinessProfileReviewsService
         return $prefix . '/' . $value;
     }
 }
-

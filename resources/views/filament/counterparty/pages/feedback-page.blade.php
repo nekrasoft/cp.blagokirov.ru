@@ -49,56 +49,54 @@
     <script src="https://res.smartwidgets.ru/app.js" defer></script>
     <div class="sw-app" data-app="43ef9cb9fb4c9709478ff11c9d4efc26"></div>
 
-    <x-filament::section
-        class="mt-6"
-        heading="Отзывы Google"
-        description="Последние отзывы из Google Business Profile."
-    >
-        @if ($googleReviewsEnabled && filled($googleReviewsError))
-            <x-filament::callout
-                color="warning"
-                icon="heroicon-m-exclamation-circle"
-                :description="$googleReviewsError"
-            />
-        @elseif (! $googleReviewsEnabled)
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-                Раздел отзывов Google отключён в настройках.
-            </p>
-        @elseif (blank($googleReviews))
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-                Пока нет отзывов Google для отображения.
-            </p>
-        @else
-            <div class="grid gap-4 md:grid-cols-2">
-                @foreach ($googleReviews as $review)
-                    <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                        <div class="flex items-start justify-between gap-3">
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {{ $review['reviewer_name'] ?? 'Пользователь Google' }}
-                            </h3>
-                            <span class="shrink-0 text-sm font-semibold text-amber-500">
-                                {{ str_repeat('★', (int) ($review['rating'] ?? 5)) }}<span class="text-gray-300 dark:text-gray-600">{{ str_repeat('★', max(0, 5 - (int) ($review['rating'] ?? 5))) }}</span>
-                            </span>
-                        </div>
+    @if ($showGoogleReviewsSection)
+        <x-filament::section
+            class="mt-6"
+            heading="Отзывы Google"
+            description="Последние отзывы из Google Business Profile."
+        >
+            @if (filled($googleReviewsError))
+                <x-filament::callout
+                    color="warning"
+                    icon="heroicon-m-exclamation-circle"
+                    :description="$googleReviewsError"
+                />
+            @elseif (blank($googleReviews))
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                    Пока нет отзывов Google для отображения.
+                </p>
+            @else
+                <div class="grid gap-4 md:grid-cols-2">
+                    @foreach ($googleReviews as $review)
+                        <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                            <div class="flex items-start justify-between gap-3">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ $review['reviewer_name'] ?? 'Пользователь Google' }}
+                                </h3>
+                                <span class="shrink-0 text-sm font-semibold text-amber-500">
+                                    {{ str_repeat('★', (int) ($review['rating'] ?? 5)) }}<span class="text-gray-300 dark:text-gray-600">{{ str_repeat('★', max(0, 5 - (int) ($review['rating'] ?? 5))) }}</span>
+                                </span>
+                            </div>
 
-                        @if (filled($review['comment'] ?? null))
-                            <p class="mt-2 text-sm text-gray-700 dark:text-gray-200">
-                                {{ $review['comment'] }}
-                            </p>
-                        @else
-                            <p class="mt-2 text-sm italic text-gray-500 dark:text-gray-400">
-                                Без текстового комментария.
-                            </p>
-                        @endif
+                            @if (filled($review['comment'] ?? null))
+                                <p class="mt-2 text-sm text-gray-700 dark:text-gray-200">
+                                    {{ $review['comment'] }}
+                                </p>
+                            @else
+                                <p class="mt-2 text-sm italic text-gray-500 dark:text-gray-400">
+                                    Без текстового комментария.
+                                </p>
+                            @endif
 
-                        @if (filled($review['display_date'] ?? null))
-                            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                                {{ $review['display_date'] }}
-                            </p>
-                        @endif
-                    </article>
-                @endforeach
-            </div>
-        @endif
-    </x-filament::section>
+                            @if (filled($review['display_date'] ?? null))
+                                <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $review['display_date'] }}
+                                </p>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </x-filament::section>
+    @endif
 </x-filament-panels::page>
