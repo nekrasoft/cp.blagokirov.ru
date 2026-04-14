@@ -42,7 +42,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->navigationItems([
-                NavigationItem::make('Карта бункеров')
+                NavigationItem::make('Карта бункеров ↗')
                     ->icon(Heroicon::OutlinedMap)
                     ->url(fn (): string => route('billing.sso.map'), true)
                     ->sort(999),
