@@ -53,6 +53,8 @@ return [
         'timeout_seconds' => (int) env('GOOGLE_BUSINESS_PROFILE_TIMEOUT_SECONDS', 10),
         'api_base_url' => env('GOOGLE_BUSINESS_PROFILE_API_BASE_URL', 'https://mybusiness.googleapis.com/v4'),
         'token_url' => env('GOOGLE_BUSINESS_PROFILE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
+        'oauth_authorize_url' => env('GOOGLE_BUSINESS_PROFILE_OAUTH_AUTHORIZE_URL', 'https://accounts.google.com/o/oauth2/v2/auth'),
+        'oauth_redirect_uri' => env('GOOGLE_BUSINESS_PROFILE_OAUTH_REDIRECT_URI'),
     ],
 
 ];
