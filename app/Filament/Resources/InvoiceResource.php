@@ -147,12 +147,17 @@ class InvoiceResource extends Resource
         }
 
         if (static::hasColumn('invoice_number')) {
-            $columns[] = TextColumn::make('invoice_number')
+            $invoiceNumberColumn = TextColumn::make('invoice_number')
                 ->label('Номер')
                 ->searchable()
                 ->sortable()
-                ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
-                ->copyable();
+                ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true);
+
+            if ($isCounterparty) {
+                $invoiceNumberColumn->copyable();
+            }
+
+            $columns[] = $invoiceNumberColumn;
         }
 
         if (static::hasColumn('tbank_invoice_id')) {
