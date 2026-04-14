@@ -151,6 +151,9 @@ class InvoiceResource extends Resource
                 ->label('Номер')
                 ->searchable()
                 ->sortable()
+                ->color(fn (Invoice $record): string => $record->pdf_url ? 'primary' : 'gray')
+                ->icon(fn (Invoice $record): ?string => $record->pdf_url ? 'heroicon-m-arrow-top-right-on-square' : null)
+                ->iconPosition('after')
                 ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true);
 
             if ($isCounterparty) {

@@ -187,6 +187,9 @@ class WorkResource extends Resource
                 ->label('Счёт')
                 ->searchable()
                 ->sortable()
+                ->color(fn (Work $record): string => $record->invoice?->pdf_url ? 'primary' : 'gray')
+                ->icon(fn (Work $record): ?string => $record->invoice?->pdf_url ? 'heroicon-m-arrow-top-right-on-square' : null)
+                ->iconPosition('after')
                 ->url(
                     fn (Work $record): ?string => $record->invoice?->pdf_url ?: null,
                     shouldOpenInNewTab: true,
