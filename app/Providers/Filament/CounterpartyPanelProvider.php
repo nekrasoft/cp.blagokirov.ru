@@ -28,6 +28,7 @@ class CounterpartyPanelProvider extends PanelProvider
         return $panel
             ->id('counterparty')
             ->path('billing')
+            ->favicon(asset('favicon.svg'))
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
             ->homeUrl(fn (): string => WorkResource::getUrl(panel: 'counterparty'))
