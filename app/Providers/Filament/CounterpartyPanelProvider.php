@@ -29,13 +29,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ->path('billing')
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
-            ->homeUrl(function (): string {
-                if (WorkResource::shouldRegisterNavigation()) {
-                    return WorkResource::getUrl(panel: 'counterparty');
-                }
-
-                return url('/billing');
-            })
+            ->homeUrl(fn (): string => WorkResource::getUrl(panel: 'counterparty'))
             ->brandName('Биллинг')
             ->colors([
                 'primary' => Color::Blue,

@@ -78,7 +78,7 @@ class CrossServiceSsoController extends Controller
         Auth::guard('counterparty')->login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(WorkResource::getUrl(null, [], true, 'counterparty'));
+        return redirect()->to(WorkResource::getUrl(panel: 'counterparty'));
     }
 
     private function redirectToBillingLoginWithSsoError(): RedirectResponse
