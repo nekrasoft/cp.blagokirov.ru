@@ -199,6 +199,40 @@ class WorkResource extends Resource
             $columns[] = $invoiceColumn;
         }
 
+        if ($isCounterparty && static::hasColumn('invoice_id') && static::hasInvoicesTable()) {
+            $columns[] = TextColumn::make('invoice.status')
+                ->label('Статус оплаты')
+                ->badge()
+                ->formatStateUsing(function (?string $state, Work $record): string {
+                    if (! $record->invoice_id) {
+                        return 'Счёт не выставлен';
+                    }
+
+                    return match ($state) {
+                        'paid' => 'Оплачен',
+                        'issued' => 'Не оплачен',
+                        'pending' => 'В обработке',
+                        'failed' => 'Ошибка счёта',
+                        'cancelled' => 'Счёт отменён',
+                        'draft' => 'Черновик',
+                        default => 'Статус неизвестен',
+                    };
+                })
+                ->color(function (?string $state, Work $record): string {
+                    if (! $record->invoice_id) {
+                        return 'gray';
+                    }
+
+                    return match ($state) {
+                        'paid' => 'success',
+                        'issued' => 'warning',
+                        'pending' => 'info',
+                        'failed', 'cancelled' => 'danger',
+                        default => 'gray',
+                    };
+                });
+        }
+
         if (! $isCounterparty && static::hasColumn('sheet_row_hash')) {
             $sheetHashColumn = TextColumn::make('sheet_row_hash')
                 ->label('Хеш строки');
