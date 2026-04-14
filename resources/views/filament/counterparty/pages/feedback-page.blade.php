@@ -1,8 +1,8 @@
 <x-filament-panels::page>
     <style>
         .feedback-callout .fi-callout-heading {
-            font-size: 1.5rem;
-            line-height: 2rem;
+            font-size: 1.2rem;
+            line-height: 1.2rem;
         }
     </style>
 
