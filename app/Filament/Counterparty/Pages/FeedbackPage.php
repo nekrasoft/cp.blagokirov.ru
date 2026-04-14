@@ -11,7 +11,7 @@ use UnitEnum;
 
 class FeedbackPage extends Page
 {
-    protected static string $view = 'filament.counterparty.pages.feedback-page';
+    protected string $view = 'filament.counterparty.pages.feedback-page';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
@@ -30,4 +30,3 @@ class FeedbackPage extends Page
         return Filament::auth()->user() instanceof CounterpartyUser;
     }
 }
-
