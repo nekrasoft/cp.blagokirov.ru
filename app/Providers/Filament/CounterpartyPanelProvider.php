@@ -45,6 +45,7 @@ class CounterpartyPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
             ->navigationItems([
                 NavigationItem::make('Карта бункеров ↗')
                     ->icon(Heroicon::OutlinedMap)
