@@ -98,11 +98,38 @@ class InvoiceResource extends Resource
                 ->maxLength(50);
         }
 
+        if (static::hasColumn('paid_amount')) {
+            $components[] = TextInput::make('paid_amount')
+                ->label('Оплачено')
+                ->numeric()
+                ->inputMode('decimal');
+        }
+
+        if (static::hasColumn('paid_at')) {
+            $components[] = DateTimePicker::make('paid_at')
+                ->label('Оплачен')
+                ->seconds(false);
+        }
+
         if (static::hasColumn('pdf_url')) {
             $components[] = TextInput::make('pdf_url')
                 ->label('Ссылка на PDF')
                 ->url()
                 ->maxLength(500);
+        }
+
+        if (static::hasColumn('bitrix_task_id')) {
+            $components[] = TextInput::make('bitrix_task_id')
+                ->label('ID задачи Bitrix24')
+                ->numeric()
+                ->rule('integer');
+        }
+
+        if (static::hasColumn('bitrix_deal_id')) {
+            $components[] = TextInput::make('bitrix_deal_id')
+                ->label('ID сделки Bitrix24')
+                ->numeric()
+                ->rule('integer');
         }
 
         return $schema->components($components);
@@ -126,6 +153,14 @@ class InvoiceResource extends Resource
                 ->sortable()
                 ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
                 ->copyable();
+        }
+
+        if (static::hasColumn('tbank_invoice_id')) {
+            $columns[] = TextColumn::make('tbank_invoice_id')
+                ->label('ID в Т-Банк')
+                ->searchable()
+                ->copyable()
+                ->toggleable();
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
@@ -202,6 +237,20 @@ class InvoiceResource extends Resource
             }
 
             $columns[] = $pdfColumn;
+        }
+
+        if (static::hasColumn('bitrix_task_id')) {
+            $columns[] = TextColumn::make('bitrix_task_id')
+                ->label('Задача Bitrix24')
+                ->sortable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('bitrix_deal_id')) {
+            $columns[] = TextColumn::make('bitrix_deal_id')
+                ->label('Сделка Bitrix24')
+                ->sortable()
+                ->toggleable();
         }
 
         if (static::hasWorksTable()) {

@@ -22,6 +22,8 @@ class Invoice extends Model
         'pdf_url',
         'paid_amount',
         'paid_at',
+        'bitrix_task_id',
+        'bitrix_deal_id',
         'created_at',
     ];
 
@@ -31,6 +33,8 @@ class Invoice extends Model
         'due_date' => 'date',
         'paid_amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'bitrix_task_id' => 'integer',
+        'bitrix_deal_id' => 'integer',
         'created_at' => 'datetime',
     ];
 

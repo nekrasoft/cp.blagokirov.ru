@@ -54,6 +54,51 @@ class CounterpartyResource extends Resource
                 ->maxLength(255),
         ];
 
+        if (static::hasColumn('inn')) {
+            $components[] = TextInput::make('inn')
+                ->label('ИНН')
+                ->maxLength(12);
+        }
+
+        if (static::hasColumn('kpp')) {
+            $components[] = TextInput::make('kpp')
+                ->label('КПП')
+                ->maxLength(9);
+        }
+
+        if (static::hasColumn('email')) {
+            $components[] = TextInput::make('email')
+                ->label('Email')
+                ->email()
+                ->maxLength(255);
+        }
+
+        if (static::hasColumn('phone')) {
+            $components[] = TextInput::make('phone')
+                ->label('Телефон')
+                ->tel()
+                ->maxLength(20);
+        }
+
+        if (static::hasColumn('note')) {
+            $components[] = TextInput::make('note')
+                ->label('Примечание')
+                ->maxLength(255);
+        }
+
+        if (static::hasColumn('contract')) {
+            $components[] = TextInput::make('contract')
+                ->label('Договор')
+                ->maxLength(255);
+        }
+
+        if (static::hasColumn('bitrix_company_id')) {
+            $components[] = TextInput::make('bitrix_company_id')
+                ->label('ID компании в Bitrix24')
+                ->numeric()
+                ->rule('integer');
+        }
+
         if (static::hasColumn('invoice_schedule')) {
             $components[] = TextInput::make('invoice_schedule')
                 ->label('График счетов')
@@ -92,6 +137,58 @@ class CounterpartyResource extends Resource
                 ->searchable()
                 ->sortable(),
         ];
+
+        if (static::hasColumn('inn')) {
+            $columns[] = TextColumn::make('inn')
+                ->label('ИНН')
+                ->searchable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('kpp')) {
+            $columns[] = TextColumn::make('kpp')
+                ->label('КПП')
+                ->searchable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('email')) {
+            $columns[] = TextColumn::make('email')
+                ->label('Email')
+                ->searchable()
+                ->copyable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('phone')) {
+            $columns[] = TextColumn::make('phone')
+                ->label('Телефон')
+                ->searchable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('note')) {
+            $columns[] = TextColumn::make('note')
+                ->label('Примечание')
+                ->searchable()
+                ->limit(40)
+                ->toggleable();
+        }
+
+        if (static::hasColumn('contract')) {
+            $columns[] = TextColumn::make('contract')
+                ->label('Договор')
+                ->searchable()
+                ->limit(40)
+                ->toggleable();
+        }
+
+        if (static::hasColumn('bitrix_company_id')) {
+            $columns[] = TextColumn::make('bitrix_company_id')
+                ->label('Bitrix24 ID')
+                ->sortable()
+                ->toggleable();
+        }
 
         if (static::hasColumn('invoice_schedule')) {
             $columns[] = TextColumn::make('invoice_schedule')

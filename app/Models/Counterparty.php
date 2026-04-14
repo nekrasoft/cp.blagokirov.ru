@@ -13,9 +13,14 @@ class Counterparty extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'bitrix_company_id' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function counterpartyUsers(): HasMany
     {
         return $this->hasMany(CounterpartyUser::class, 'counterparty_id');
     }
 }
-
