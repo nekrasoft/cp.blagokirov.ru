@@ -41,4 +41,18 @@ return [
         'map_service_url' => env('MAP_SERVICE_URL', 'https://map.blagokirov.ru'),
     ],
 
+    'google_business_profile' => [
+        'enabled' => (bool) env('GOOGLE_BUSINESS_PROFILE_ENABLED', false),
+        'account_id' => env('GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID'),
+        'location_id' => env('GOOGLE_BUSINESS_PROFILE_LOCATION_ID'),
+        'client_id' => env('GOOGLE_BUSINESS_PROFILE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET'),
+        'refresh_token' => env('GOOGLE_BUSINESS_PROFILE_REFRESH_TOKEN'),
+        'reviews_limit' => (int) env('GOOGLE_BUSINESS_PROFILE_REVIEWS_LIMIT', 6),
+        'cache_minutes' => (int) env('GOOGLE_BUSINESS_PROFILE_CACHE_MINUTES', 30),
+        'timeout_seconds' => (int) env('GOOGLE_BUSINESS_PROFILE_TIMEOUT_SECONDS', 10),
+        'api_base_url' => env('GOOGLE_BUSINESS_PROFILE_API_BASE_URL', 'https://mybusiness.googleapis.com/v4'),
+        'token_url' => env('GOOGLE_BUSINESS_PROFILE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
+    ],
+
 ];
