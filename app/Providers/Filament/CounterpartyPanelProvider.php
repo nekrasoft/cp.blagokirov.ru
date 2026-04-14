@@ -39,7 +39,7 @@ class CounterpartyPanelProvider extends PanelProvider
                     return 'Биллинг';
                 }
 
-                return 'Биллинг. ' . $counterpartyName;
+                return 'Биллинг — ' . $counterpartyName;
             })
             ->colors([
                 'primary' => Color::Blue,
