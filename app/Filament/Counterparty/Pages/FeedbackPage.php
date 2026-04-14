@@ -15,9 +15,9 @@ class FeedbackPage extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
-    protected static ?string $navigationLabel = 'Оставить отзыв';
+    protected static ?string $navigationLabel = 'Отзывы';
 
-    protected static ?string $title = 'Оставить отзыв';
+    protected static ?string $title = 'Отзывы';
 
     protected static ?string $slug = 'feedback';
 

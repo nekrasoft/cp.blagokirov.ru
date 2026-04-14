@@ -1,37 +1,20 @@
 <x-filament-panels::page>
+    <style>
+        .feedback-callout .fi-callout-heading {
+            font-size: 1.5rem;
+            line-height: 2rem;
+        }
+    </style>
+
     <x-filament::callout
+        class="feedback-callout"
         color="success"
         heading="Благодарим за выбор нашей компании!"
         icon="heroicon-m-hand-thumb-up"
         description="Надеемся, вы остались довольны результатом. Пожалуйста, поделитесь впечатлениями, оставив отзыв в онлайн-сервисах."
     >
         <x-slot name="footer">
-            <ol class="list-decimal space-y-1 ps-5 text-sm">
-                <li>
-                    Яндекс:
-                    <a
-                        class="underline"
-                        href="https://yandex.ru/maps/org/10924053513/?add-review=true"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        yandex.ru/maps/org/10924053513/?add-review=true
-                    </a>
-                </li>
-                <li>
-                    Google:
-                    <a
-                        class="underline"
-                        href="https://g.page/r/CT-lPsP9hSHrEAE/review"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        g.page/r/CT-lPsP9hSHrEAE/review
-                    </a>
-                </li>
-            </ol>
-
-            <p class="mt-3 text-sm">
+            <p class="text-sm">
                 Вы можете просто поставить нам оценку, а также написать что-то полезное — ваше мнение поможет другим покупателям.
             </p>
 
