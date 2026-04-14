@@ -34,7 +34,8 @@ class GoogleBusinessProfileOAuthController extends Controller
             'scope' => 'https://www.googleapis.com/auth/business.manage',
             'access_type' => 'offline',
             'include_granted_scopes' => 'true',
-            'prompt' => 'consent',
+            // Force account picker to avoid accidental login with a non-tester Google account.
+            'prompt' => 'consent select_account',
             'state' => $state,
         ], '', '&', PHP_QUERY_RFC3986);
 
@@ -152,4 +153,3 @@ class GoogleBusinessProfileOAuthController extends Controller
         return route('admin.google-business-profile.oauth.callback');
     }
 }
-
