@@ -241,7 +241,7 @@ class InvoiceResource extends Resource
 
         if (static::hasColumn('bitrix_task_id')) {
             $columns[] = TextColumn::make('bitrix_task_id')
-                ->label('Задача Bitrix24')
+                ->label('Задача')
                 ->color(
                     fn (Invoice $record): string => static::buildBitrixTaskUrl($record->bitrix_task_id) ? 'primary' : 'gray'
                 )
@@ -261,7 +261,7 @@ class InvoiceResource extends Resource
 
         if (static::hasColumn('bitrix_deal_id')) {
             $columns[] = TextColumn::make('bitrix_deal_id')
-                ->label('Сделка Bitrix24')
+                ->label('Сделка')
                 ->color(
                     fn (Invoice $record): string => static::buildBitrixDealUrl($record->bitrix_deal_id) ? 'primary' : 'gray'
                 )
