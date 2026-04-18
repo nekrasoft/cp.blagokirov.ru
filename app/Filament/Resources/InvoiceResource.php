@@ -242,6 +242,10 @@ class InvoiceResource extends Resource
         if (static::hasColumn('bitrix_task_id')) {
             $columns[] = TextColumn::make('bitrix_task_id')
                 ->label('Задача Bitrix24')
+                ->url(
+                    fn (Invoice $record): ?string => static::buildBitrixTaskUrl($record->bitrix_task_id),
+                    shouldOpenInNewTab: true,
+                )
                 ->sortable()
                 ->toggleable();
         }
@@ -249,6 +253,10 @@ class InvoiceResource extends Resource
         if (static::hasColumn('bitrix_deal_id')) {
             $columns[] = TextColumn::make('bitrix_deal_id')
                 ->label('Сделка Bitrix24')
+                ->url(
+                    fn (Invoice $record): ?string => static::buildBitrixDealUrl($record->bitrix_deal_id),
+                    shouldOpenInNewTab: true,
+                )
                 ->sortable()
                 ->toggleable();
         }
@@ -421,6 +429,41 @@ class InvoiceResource extends Resource
         } catch (Throwable) {
             return false;
         }
+    }
+
+    protected static function buildBitrixTaskUrl(?int $taskId): ?string
+    {
+        if (! $taskId) {
+            return null;
+        }
+
+        $baseUrl = static::bitrixBaseUrl();
+
+        if ($baseUrl === '') {
+            return null;
+        }
+
+        return sprintf('%s/workgroups/group/174/tasks/task/view/%d/', $baseUrl, $taskId);
+    }
+
+    protected static function buildBitrixDealUrl(?int $dealId): ?string
+    {
+        if (! $dealId) {
+            return null;
+        }
+
+        $baseUrl = static::bitrixBaseUrl();
+
+        if ($baseUrl === '') {
+            return null;
+        }
+
+        return sprintf('%s/crm/deal/details/%d/', $baseUrl, $dealId);
+    }
+
+    protected static function bitrixBaseUrl(): string
+    {
+        return rtrim(trim((string) config('services.bitrix24.base_url', '')), '/');
     }
 
     protected static function counterpartyTitleAttribute(): string

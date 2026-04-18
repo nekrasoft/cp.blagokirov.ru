@@ -57,4 +57,8 @@ return [
         'oauth_redirect_uri' => env('GOOGLE_BUSINESS_PROFILE_OAUTH_REDIRECT_URI'),
     ],
 
+    'bitrix24' => [
+        'base_url' => env('BITRIX24_BASE_URL'),
+    ],
+
 ];
