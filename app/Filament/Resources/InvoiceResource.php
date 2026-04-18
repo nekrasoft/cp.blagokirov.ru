@@ -163,14 +163,6 @@ class InvoiceResource extends Resource
             $columns[] = $invoiceNumberColumn;
         }
 
-        if (static::hasColumn('tbank_invoice_id')) {
-            $columns[] = TextColumn::make('tbank_invoice_id')
-                ->label('ID в Т-Банк')
-                ->searchable()
-                ->copyable()
-                ->toggleable();
-        }
-
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
                 ->label('Контрагент')
