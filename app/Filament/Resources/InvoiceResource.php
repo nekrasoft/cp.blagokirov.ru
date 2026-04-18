@@ -242,6 +242,15 @@ class InvoiceResource extends Resource
         if (static::hasColumn('bitrix_task_id')) {
             $columns[] = TextColumn::make('bitrix_task_id')
                 ->label('Задача Bitrix24')
+                ->color(
+                    fn (Invoice $record): string => static::buildBitrixTaskUrl($record->bitrix_task_id) ? 'primary' : 'gray'
+                )
+                ->icon(
+                    fn (Invoice $record): ?string => static::buildBitrixTaskUrl($record->bitrix_task_id)
+                        ? 'heroicon-m-arrow-top-right-on-square'
+                        : null
+                )
+                ->iconPosition('after')
                 ->url(
                     fn (Invoice $record): ?string => static::buildBitrixTaskUrl($record->bitrix_task_id),
                     shouldOpenInNewTab: true,
@@ -253,6 +262,15 @@ class InvoiceResource extends Resource
         if (static::hasColumn('bitrix_deal_id')) {
             $columns[] = TextColumn::make('bitrix_deal_id')
                 ->label('Сделка Bitrix24')
+                ->color(
+                    fn (Invoice $record): string => static::buildBitrixDealUrl($record->bitrix_deal_id) ? 'primary' : 'gray'
+                )
+                ->icon(
+                    fn (Invoice $record): ?string => static::buildBitrixDealUrl($record->bitrix_deal_id)
+                        ? 'heroicon-m-arrow-top-right-on-square'
+                        : null
+                )
+                ->iconPosition('after')
                 ->url(
                     fn (Invoice $record): ?string => static::buildBitrixDealUrl($record->bitrix_deal_id),
                     shouldOpenInNewTab: true,
