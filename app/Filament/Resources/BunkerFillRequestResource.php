@@ -51,9 +51,10 @@ class BunkerFillRequestResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
-            $columns[] = TextColumn::make('id')
-                ->label('ID')
+        if (static::hasColumn('filled_at')) {
+            $columns[] = TextColumn::make('filled_at')
+                ->label('Дата заявки')
+                ->dateTime('d.m.Y H:i')
                 ->sortable();
         }
 
@@ -102,13 +103,6 @@ class BunkerFillRequestResource extends Resource
                 ->label('Кто создал')
                 ->searchable()
                 ->toggleable();
-        }
-
-        if (static::hasColumn('filled_at')) {
-            $columns[] = TextColumn::make('filled_at')
-                ->label('Дата заявки')
-                ->dateTime('d.m.Y H:i')
-                ->sortable();
         }
 
         if (! $isCounterparty && static::hasColumn('contractor')) {
