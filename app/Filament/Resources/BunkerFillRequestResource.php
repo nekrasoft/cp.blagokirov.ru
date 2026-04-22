@@ -51,6 +51,12 @@ class BunkerFillRequestResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
+        if (static::hasColumn('id')) {
+            $columns[] = TextColumn::make('id')
+                ->label('ID')
+                ->sortable();
+        }
+
         if (static::hasColumn('filled_at')) {
             $columns[] = TextColumn::make('filled_at')
                 ->label('Дата заявки')
