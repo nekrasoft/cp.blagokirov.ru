@@ -57,14 +57,6 @@ class BunkerFillRequestResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('bunker_id')) {
-            $columns[] = TextColumn::make('bunker_id')
-                ->label('ID бункера')
-                ->searchable()
-                ->sortable()
-                ->copyable();
-        }
-
         if (static::hasColumn('bunker_number')) {
             $columns[] = TextColumn::make('bunker_number')
                 ->label('№ бункера')
@@ -90,13 +82,6 @@ class BunkerFillRequestResource extends Resource
                 ->label('Адрес')
                 ->searchable()
                 ->wrap();
-        }
-
-        if (static::hasColumn('waste_type')) {
-            $columns[] = TextColumn::make('waste_type')
-                ->label('Тип отходов')
-                ->badge()
-                ->sortable();
         }
 
         if (static::hasColumn('fill_level')) {
@@ -131,19 +116,6 @@ class BunkerFillRequestResource extends Resource
                 ->label('Подрядчик')
                 ->searchable()
                 ->toggleable();
-        }
-
-        if (static::hasColumn('created_at')) {
-            $createdAtColumn = TextColumn::make('created_at')
-                ->label('Создано')
-                ->dateTime('d.m.Y H:i')
-                ->sortable();
-
-            if (! $isCounterparty) {
-                $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
-            }
-
-            $columns[] = $createdAtColumn;
         }
 
         $filters = [];
