@@ -261,26 +261,6 @@ class InvoiceResource extends Resource
                 ->toggleable();
         }
 
-        if (static::hasColumn('bitrix_deal_id')) {
-            $columns[] = TextColumn::make('bitrix_deal_id')
-                ->label('Сделка')
-                ->color(
-                    fn (Invoice $record): string => static::buildBitrixDealUrl($record->bitrix_deal_id) ? 'primary' : 'gray'
-                )
-                ->icon(
-                    fn (Invoice $record): ?string => static::buildBitrixDealUrl($record->bitrix_deal_id)
-                        ? 'heroicon-m-arrow-top-right-on-square'
-                        : null
-                )
-                ->iconPosition('after')
-                ->url(
-                    fn (Invoice $record): ?string => static::buildBitrixDealUrl($record->bitrix_deal_id),
-                    shouldOpenInNewTab: true,
-                )
-                ->sortable()
-                ->toggleable();
-        }
-
         if (static::hasWorksTable()) {
             $columns[] = TextColumn::make('works_count')
                 ->label('Работ')
