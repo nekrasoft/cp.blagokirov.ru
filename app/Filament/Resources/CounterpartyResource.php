@@ -69,7 +69,14 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('email')) {
             $components[] = TextInput::make('email')
                 ->label('Email')
-                ->email()
+                ->rule(static::emailListValidationRule())
+                ->maxLength(255);
+        }
+
+        if (static::hasColumn('email_accountant')) {
+            $components[] = TextInput::make('email_accountant')
+                ->label('Email бухгалтера')
+                ->rule(static::emailListValidationRule())
                 ->maxLength(255);
         }
 
@@ -155,6 +162,14 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('email')) {
             $columns[] = TextColumn::make('email')
                 ->label('Email')
+                ->searchable()
+                ->copyable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('email_accountant')) {
+            $columns[] = TextColumn::make('email_accountant')
+                ->label('Email бухгалтера')
                 ->searchable()
                 ->copyable()
                 ->toggleable();
@@ -270,5 +285,33 @@ class CounterpartyResource extends Resource
     protected static function isCounterpartyAuthenticated(): bool
     {
         return Filament::auth()->user() instanceof CounterpartyUser;
+    }
+
+    protected static function emailListValidationRule(): \Closure
+    {
+        return static function (string $attribute, mixed $value, \Closure $fail): void {
+            $value = trim((string) $value);
+
+            if ($value === '') {
+                return;
+            }
+
+            $emails = array_filter(
+                array_map('trim', preg_split('/[;,\n]+/u', $value) ?: []),
+                fn (string $email): bool => $email !== '',
+            );
+
+            if ($emails === []) {
+                return;
+            }
+
+            foreach ($emails as $email) {
+                if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                    $fail('Поле Email должно содержать корректный email или список email через запятую или точку с запятой.');
+
+                    return;
+                }
+            }
+        };
     }
 }
