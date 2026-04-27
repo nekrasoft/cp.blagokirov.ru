@@ -20,7 +20,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -143,7 +142,7 @@ class WorkResource extends Resource
                 ->searchable()
                 ->sortable()
                 ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
-                ->url(fn (Work $record): ?string => static::counterpartyNameFilterUrl($record->counterparty_name));
+                ->url(fn (Work $record): ?string => static::counterpartySearchUrl($record->counterparty_name));
         }
 
         if (static::hasColumn('structure')) {
@@ -267,19 +266,6 @@ class WorkResource extends Resource
                 ->nullable()
                 ->trueLabel('Есть счёт')
                 ->falseLabel('Без счёта');
-        }
-
-        if (! $isCounterparty && static::hasColumn('counterparty_name')) {
-            $filters[] = SelectFilter::make('counterparty_name')
-                ->label('Контрагент')
-                ->options(fn (): array => Work::query()
-                    ->whereNotNull('counterparty_name')
-                    ->where('counterparty_name', '<>', '')
-                    ->distinct()
-                    ->orderBy('counterparty_name')
-                    ->pluck('counterparty_name', 'counterparty_name')
-                    ->all())
-                ->searchable();
         }
 
         $recordActions = [];
@@ -466,7 +452,7 @@ class WorkResource extends Resource
         return array_keys($normalized);
     }
 
-    protected static function counterpartyNameFilterUrl(?string $counterpartyName): ?string
+    protected static function counterpartySearchUrl(?string $counterpartyName): ?string
     {
         $counterpartyName = trim((string) $counterpartyName);
 
@@ -475,11 +461,7 @@ class WorkResource extends Resource
         }
 
         return static::getUrl('index', [
-            'tableFilters' => [
-                'counterparty_name' => [
-                    'value' => $counterpartyName,
-                ],
-            ],
+            'search' => $counterpartyName,
         ]);
     }
 

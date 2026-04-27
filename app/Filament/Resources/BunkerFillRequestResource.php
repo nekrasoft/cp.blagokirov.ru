@@ -75,8 +75,8 @@ class BunkerFillRequestResource extends Resource
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
-                ->color(fn (BunkerFillRequest $record): string => $record->counterparty_id ? 'primary' : 'gray')
-                ->url(fn (BunkerFillRequest $record): ?string => static::counterpartyFilterUrl($record->counterparty_id));
+                ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
+                ->url(fn (?string $state): ?string => static::counterpartySearchUrl($state));
         }
 
         if (static::hasColumn('district')) {
@@ -242,18 +242,16 @@ class BunkerFillRequestResource extends Resource
         return static::$hasCounterpartyColumnCache['title_attribute'] ? 'short_name' : 'name';
     }
 
-    protected static function counterpartyFilterUrl(?int $counterpartyId): ?string
+    protected static function counterpartySearchUrl(?string $counterpartyName): ?string
     {
-        if (! $counterpartyId) {
+        $counterpartyName = trim((string) $counterpartyName);
+
+        if ($counterpartyName === '') {
             return null;
         }
 
         return static::getUrl('index', [
-            'tableFilters' => [
-                'counterparty_id' => [
-                    'value' => (string) $counterpartyId,
-                ],
-            ],
+            'search' => $counterpartyName,
         ]);
     }
 
