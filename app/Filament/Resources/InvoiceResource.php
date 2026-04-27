@@ -167,7 +167,9 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
-                ->sortable();
+                ->sortable()
+                ->color(fn (Invoice $record): string => $record->counterparty_id ? 'primary' : 'gray')
+                ->url(fn (Invoice $record): ?string => static::counterpartyFilterUrl($record->counterparty_id));
         }
 
         if (static::hasColumn('issued_at')) {
@@ -497,6 +499,21 @@ class InvoiceResource extends Resource
         }
 
         return static::$hasCounterpartyColumnCache['title_attribute'] ? 'short_name' : 'name';
+    }
+
+    protected static function counterpartyFilterUrl(?int $counterpartyId): ?string
+    {
+        if (! $counterpartyId) {
+            return null;
+        }
+
+        return static::getUrl('index', [
+            'tableFilters' => [
+                'counterparty_id' => [
+                    'value' => (string) $counterpartyId,
+                ],
+            ],
+        ]);
     }
 
     protected static function isCounterpartyAuthenticated(): bool
