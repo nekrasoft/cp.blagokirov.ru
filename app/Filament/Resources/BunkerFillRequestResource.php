@@ -111,13 +111,6 @@ class BunkerFillRequestResource extends Resource
                 ->toggleable();
         }
 
-        if (! $isCounterparty && static::hasColumn('contractor')) {
-            $columns[] = TextColumn::make('contractor')
-                ->label('Подрядчик')
-                ->searchable()
-                ->toggleable();
-        }
-
         $filters = [];
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
