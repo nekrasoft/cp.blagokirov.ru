@@ -135,7 +135,8 @@ class BunkerResource extends Resource
 
         if (static::hasColumn('last_pickup_date')) {
             $components[] = DatePicker::make('last_pickup_date')
-                ->label('Последний вывоз');
+                ->label('Последний вывоз')
+                ->dehydrateStateUsing(fn ($state): string => filled($state) ? substr((string) $state, 0, 10) : '');
         }
 
         if (static::hasColumn('fill_level')) {
@@ -165,7 +166,9 @@ class BunkerResource extends Resource
             $components[] = TextInput::make('contact_phone')
                 ->label('Телефон')
                 ->tel()
-                ->maxLength(50);
+                ->default('')
+                ->maxLength(50)
+                ->dehydrateStateUsing(fn (?string $state): string => trim((string) $state));
         }
 
         if (static::hasColumn('lat')) {

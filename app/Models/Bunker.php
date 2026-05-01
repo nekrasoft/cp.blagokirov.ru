@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -48,5 +49,13 @@ class Bunker extends Model
     public function counterparty(): BelongsTo
     {
         return $this->belongsTo(Counterparty::class, 'counterparty_id');
+    }
+
+    protected function lastPickupDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => filled($value) ? $value : null,
+            set: fn ($value): string => filled($value) ? substr((string) $value, 0, 10) : '',
+        );
     }
 }
