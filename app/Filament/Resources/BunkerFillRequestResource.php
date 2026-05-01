@@ -51,7 +51,7 @@ class BunkerFillRequestResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
+        if (! $isCounterparty && static::hasColumn('id')) {
             $columns[] = TextColumn::make('id')
                 ->label('ID')
                 ->sortable();
@@ -67,6 +67,7 @@ class BunkerFillRequestResource extends Resource
         if (static::hasColumn('bunker_number')) {
             $columns[] = TextColumn::make('bunker_number')
                 ->label('№ бункера')
+                ->searchable()
                 ->sortable();
         }
 
