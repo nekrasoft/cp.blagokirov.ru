@@ -67,6 +67,13 @@ class BunkerFillRequestResource extends Resource
                 ->sortable();
         }
 
+        if (static::hasColumn('executed_at')) {
+            $columns[] = TextColumn::make('executed_at')
+                ->label('Дата исполнения')
+                ->date('d.m.Y')
+                ->sortable();
+        }
+
         if (static::hasColumn('bunker_number')) {
             $columns[] = TextColumn::make('bunker_number')
                 ->label('№ бункера')

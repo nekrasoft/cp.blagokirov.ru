@@ -22,6 +22,7 @@ class BunkerFillRequest extends Model
         'fill_level',
         'filled_by',
         'filled_at',
+        'executed_at',
         'created_at',
     ];
 
@@ -30,6 +31,7 @@ class BunkerFillRequest extends Model
         'counterparty_id' => 'integer',
         'fill_level' => 'integer',
         'filled_at' => 'datetime',
+        'executed_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 
