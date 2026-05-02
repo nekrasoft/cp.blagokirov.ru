@@ -221,6 +221,8 @@ class BunkerResource extends Resource
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
+                ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
+                ->url(fn (?string $state): ?string => static::counterpartySearchUrl($state))
                 ->toggleable();
         }
 
@@ -236,30 +238,6 @@ class BunkerResource extends Resource
                 ->label('Адрес')
                 ->searchable()
                 ->wrap();
-        }
-
-        if (static::hasColumn('volume')) {
-            $columns[] = TextColumn::make('volume')
-                ->label('Объём')
-                ->numeric(decimalPlaces: 2)
-                ->sortable()
-                ->toggleable();
-        }
-
-        if (static::hasColumn('waste_type')) {
-            $columns[] = TextColumn::make('waste_type')
-                ->label('Тип отходов')
-                ->searchable()
-                ->sortable()
-                ->toggleable();
-        }
-
-        if (static::hasColumn('contractor')) {
-            $columns[] = TextColumn::make('contractor')
-                ->label('Подрядчик')
-                ->searchable()
-                ->sortable()
-                ->toggleable();
         }
 
         if (static::hasColumn('last_pickup_date')) {
@@ -420,6 +398,19 @@ class BunkerResource extends Resource
         }
 
         return static::$hasCounterpartyColumnCache['title_attribute'] ? 'short_name' : 'name';
+    }
+
+    protected static function counterpartySearchUrl(?string $counterpartyName): ?string
+    {
+        $counterpartyName = trim((string) $counterpartyName);
+
+        if ($counterpartyName === '') {
+            return null;
+        }
+
+        return static::getUrl('index', [
+            'search' => $counterpartyName,
+        ]);
     }
 
     protected static function distinctOptions(string $column): array
