@@ -264,13 +264,6 @@ class InvoiceResource extends Resource
                 ->toggleable();
         }
 
-        if (static::hasWorksTable()) {
-            $columns[] = TextColumn::make('works_count')
-                ->label('Работ')
-                ->counts('works')
-                ->sortable();
-        }
-
         if (static::hasColumn('created_at')) {
             $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создан')
