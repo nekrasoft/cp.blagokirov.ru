@@ -97,19 +97,6 @@ class BunkerFillRequestResource extends Resource
                 ->wrap();
         }
 
-        if (static::hasColumn('fill_level')) {
-            $columns[] = TextColumn::make('fill_level')
-                ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
-                ->badge()
-                ->color(fn ($state): string => match (true) {
-                    (int) $state >= 100 => 'danger',
-                    (int) $state >= 70 => 'warning',
-                    default => 'success',
-                })
-                ->sortable();
-        }
-
         if (static::hasColumn('filled_by')) {
             $columns[] = TextColumn::make('filled_by')
                 ->label('Кто создал')
