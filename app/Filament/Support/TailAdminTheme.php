@@ -31,6 +31,10 @@ final class TailAdminTheme
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn () => view('filament.tailadmin.theme-toggle'),
             )
+            ->renderHook(
+                PanelsRenderHook::SCRIPTS_AFTER,
+                fn () => view('filament.tailadmin.navigation-search-sync'),
+            )
             ->colors([
                 'primary' => self::BRAND,
                 'gray' => Color::Gray,
