@@ -232,7 +232,7 @@ class InvoiceResource extends Resource
 
         if (static::hasColumn('paid_at')) {
             $paidAtColumn = TextColumn::make('paid_at')
-                ->label('Оплачен')
+                ->label('Дата оплаты')
                 ->date('d.m.Y')
                 ->sortable();
 
@@ -246,8 +246,15 @@ class InvoiceResource extends Resource
         if (static::hasColumn('pdf_url')) {
             $pdfColumn = TextColumn::make('pdf_url')
                 ->label('PDF')
-                ->url(fn (?string $state): ?string => $state ?: null, shouldOpenInNewTab: true)
-                ->limit(50);
+                ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
+                ->formatStateUsing(
+                    fn (?string $state, Invoice $record): ?string => filled($state)
+                        ? 'Открыть счет №' . ($record->invoice_number ?: $record->id)
+                        : null
+                )
+                ->color(fn (Invoice $record): string => filled($record->pdf_url) ? 'primary' : 'gray')
+                ->icon(fn (Invoice $record): ?string => filled($record->pdf_url) ? 'heroicon-m-arrow-top-right-on-square' : null)
+                ->iconPosition('after');
 
             if (! $isCounterparty) {
                 $pdfColumn->toggleable(isToggledHiddenByDefault: true);
