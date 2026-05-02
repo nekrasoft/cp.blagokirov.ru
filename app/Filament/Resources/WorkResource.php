@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\WorkResource\Pages\CreateWork;
 use App\Filament\Resources\WorkResource\Pages\EditWork;
 use App\Filament\Resources\WorkResource\Pages\ListWorks;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\CounterpartyUser;
 use App\Models\Work;
 use BackedEnum;
@@ -30,6 +31,8 @@ use UnitEnum;
 
 class WorkResource extends Resource
 {
+    use PreservesNavigationSearch;
+
     protected static ?string $model = Work::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;

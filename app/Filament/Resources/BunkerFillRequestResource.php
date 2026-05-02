@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BunkerFillRequestResource\Pages\ListBunkerFillRequests;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\BunkerFillRequest;
 use App\Models\CounterpartyUser;
 use BackedEnum;
@@ -21,6 +22,8 @@ use UnitEnum;
 
 class BunkerFillRequestResource extends Resource
 {
+    use PreservesNavigationSearch;
+
     protected static ?string $model = BunkerFillRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;

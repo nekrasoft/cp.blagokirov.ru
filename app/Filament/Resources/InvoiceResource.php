@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
@@ -31,6 +32,8 @@ use UnitEnum;
 
 class InvoiceResource extends Resource
 {
+    use PreservesNavigationSearch;
+
     protected static ?string $model = Invoice::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;

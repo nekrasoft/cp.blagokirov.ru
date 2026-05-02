@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\BunkerResource\Pages\CreateBunker;
 use App\Filament\Resources\BunkerResource\Pages\EditBunker;
 use App\Filament\Resources\BunkerResource\Pages\ListBunkers;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\Bunker;
 use App\Models\CounterpartyUser;
 use BackedEnum;
@@ -31,6 +32,8 @@ use UnitEnum;
 
 class BunkerResource extends Resource
 {
+    use PreservesNavigationSearch;
+
     protected static ?string $model = Bunker::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
