@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
@@ -32,6 +33,7 @@ use UnitEnum;
 
 class InvoiceResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = Invoice::class;
@@ -318,7 +320,7 @@ class InvoiceResource extends Resource
         $recordActions = [];
         $toolbarActions = [];
 
-        if (! $isCounterparty) {
+        if (! $isCounterparty && static::hasAdminWriteAccess()) {
             $recordActions = [
                 EditAction::make(),
                 DeleteAction::make(),
@@ -380,22 +382,30 @@ class InvoiceResource extends Resource
 
     public static function canCreate(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool

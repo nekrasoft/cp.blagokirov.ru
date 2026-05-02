@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -12,6 +13,8 @@ class GoogleBusinessProfileOAuthController extends Controller
 {
     public function redirectToGoogle(Request $request): RedirectResponse
     {
+        $this->authorizeAdminWrite($request);
+
         $clientId = trim((string) config('services.google_business_profile.client_id'));
 
         if ($clientId === '') {
@@ -44,6 +47,8 @@ class GoogleBusinessProfileOAuthController extends Controller
 
     public function handleGoogleCallback(Request $request): View
     {
+        $this->authorizeAdminWrite($request);
+
         $expectedState = (string) $request->session()->pull('google_business_profile_oauth_state', '');
         $actualState = trim((string) $request->query('state'));
 
@@ -151,5 +156,14 @@ class GoogleBusinessProfileOAuthController extends Controller
         }
 
         return route('admin.google-business-profile.oauth.callback');
+    }
+
+    private function authorizeAdminWrite(Request $request): void
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! $user->canWriteAdminPanel()) {
+            abort(403);
+        }
     }
 }

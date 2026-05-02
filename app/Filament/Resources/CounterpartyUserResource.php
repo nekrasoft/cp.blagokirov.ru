@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CounterpartyUserResource\Pages\CreateCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\EditCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\ListCounterpartyUsers;
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Models\CounterpartyUser;
 use BackedEnum;
 use Filament\Facades\Filament;
@@ -23,11 +24,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use UnitEnum;
 
 class CounterpartyUserResource extends Resource
 {
+    use AuthorizesAdminWrites;
+
     protected static ?string $model = CounterpartyUser::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
@@ -85,6 +89,22 @@ class CounterpartyUserResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (static::hasAdminWriteAccess()) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
+        }
+
         return $table
             ->defaultSort('login')
             ->columns([
@@ -125,15 +145,8 @@ class CounterpartyUserResource extends Resource
                     ->trueLabel('Задан')
                     ->falseLabel('Не задан'),
             ])
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
@@ -148,6 +161,34 @@ class CounterpartyUserResource extends Resource
     public static function canAccess(): bool
     {
         return ! static::isCounterpartyAuthenticated() && parent::canAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function isCounterpartyAuthenticated(): bool
