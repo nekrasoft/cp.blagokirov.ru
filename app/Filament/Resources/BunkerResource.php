@@ -336,7 +336,10 @@ class BunkerResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-map-pin')
+            ->emptyStateHeading('Бункеров пока нет')
+            ->emptyStateDescription('После загрузки или создания бункеров здесь будут адреса, районы и заполненность.');
     }
 
     public static function getPages(): array

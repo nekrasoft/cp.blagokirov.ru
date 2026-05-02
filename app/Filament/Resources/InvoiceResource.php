@@ -143,7 +143,7 @@ class InvoiceResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
+        if (! $isCounterparty && static::hasColumn('id')) {
             $columns[] = TextColumn::make('id')
                 ->label('ID')
                 ->sortable();
@@ -186,6 +186,8 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('due_date')
                 ->label('Срок оплаты')
                 ->date('d.m.Y')
+                ->color(fn (Invoice $record): string => static::isOverdue($record) ? 'danger' : 'gray')
+                ->icon(fn (Invoice $record): ?string => static::isOverdue($record) ? 'heroicon-m-exclamation-triangle' : null)
                 ->sortable();
         }
 
@@ -193,11 +195,21 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('status')
                 ->label('Статус')
                 ->badge()
+                ->formatStateUsing(fn (?string $state): string => match ($state) {
+                    'draft' => 'Черновик',
+                    'pending' => 'В обработке',
+                    'issued' => 'К оплате',
+                    'paid' => 'Оплачен',
+                    'failed' => 'Ошибка',
+                    'cancelled' => 'Отменён',
+                    default => 'Без статуса',
+                })
                 ->color(fn (?string $state): string => match ($state) {
                     'paid' => 'success',
-                    'issued' => 'info',
+                    'issued' => 'warning',
                     'failed', 'cancelled' => 'danger',
-                    'draft', 'pending' => 'warning',
+                    'draft' => 'gray',
+                    'pending' => 'info',
                     default => 'gray',
                 })
                 ->sortable();
@@ -207,7 +219,7 @@ class InvoiceResource extends Resource
             $paidAmountColumn = TextColumn::make('paid_amount')
                 ->label('Оплачено')
                 ->formatStateUsing(
-                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ')
+                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ') . ' ₽'
                 )
                 ->sortable();
 
@@ -283,12 +295,12 @@ class InvoiceResource extends Resource
             $filters[] = SelectFilter::make('status')
                 ->label('Статус')
                 ->options([
-                    'draft' => 'draft',
-                    'pending' => 'pending',
-                    'issued' => 'issued',
-                    'paid' => 'paid',
-                    'failed' => 'failed',
-                    'cancelled' => 'cancelled',
+                    'draft' => 'Черновик',
+                    'pending' => 'В обработке',
+                    'issued' => 'К оплате',
+                    'paid' => 'Оплачен',
+                    'failed' => 'Ошибка',
+                    'cancelled' => 'Отменён',
                 ]);
         }
 
@@ -319,7 +331,10 @@ class InvoiceResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-document-text')
+            ->emptyStateHeading('Счетов пока нет')
+            ->emptyStateDescription('Когда счета появятся, здесь будут видны статус оплаты, срок и ссылки на PDF.');
     }
 
     public static function getPages(): array
@@ -339,7 +354,6 @@ class InvoiceResource extends Resource
     public static function canAccess(): bool
     {
         return static::hasTable()
-            && ! static::isCounterpartyAuthenticated()
             && parent::canAccess();
     }
 
@@ -460,6 +474,19 @@ class InvoiceResource extends Resource
     protected static function bitrixBaseUrl(): string
     {
         return rtrim(trim((string) config('services.bitrix24.base_url', '')), '/');
+    }
+
+    protected static function isOverdue(Invoice $record): bool
+    {
+        if (! static::hasColumn('due_date') || ! $record->due_date) {
+            return false;
+        }
+
+        if (static::hasColumn('status') && $record->status === 'paid') {
+            return false;
+        }
+
+        return $record->due_date->isPast() && ! $record->due_date->isToday();
     }
 
     protected static function counterpartyTitleAttribute(): string

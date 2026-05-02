@@ -3,7 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
-use App\Filament\Resources\WorkResource;
+use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
 use App\Filament\Support\TailAdminTheme;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
@@ -31,7 +31,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ->favicon(asset('favicon.svg'))
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
-            ->homeUrl(fn (): string => WorkResource::getUrl(panel: 'counterparty'))
+            ->homeUrl(fn (): string => CounterpartyDashboard::getUrl(panel: 'counterparty'))
             ->brandName(function (): string {
                 $user = Filament::auth()->user();
                 $counterpartyName = trim((string) ($user?->counterparty?->name ?? ''));
@@ -44,6 +44,9 @@ class CounterpartyPanelProvider extends PanelProvider
             })
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
+            ->pages([
+                CounterpartyDashboard::class,
+            ])
             ->navigationItems([
                 NavigationItem::make('Карта бункеров ↗')
                     ->icon(Heroicon::OutlinedMap)

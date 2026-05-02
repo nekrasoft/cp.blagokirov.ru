@@ -126,7 +126,7 @@ class WorkResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
+        if (! $isCounterparty && static::hasColumn('id')) {
             $columns[] = TextColumn::make('id')
                 ->label('ID')
                 ->sortable();
@@ -163,7 +163,7 @@ class WorkResource extends Resource
 
         if (static::hasColumn('note')) {
             $noteColumn = TextColumn::make('note')
-                ->label('Note')
+                ->label('Описание')
                 ->searchable()
                 ->wrap();
 
@@ -183,7 +183,7 @@ class WorkResource extends Resource
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
                 ->label('Сумма')
-                ->numeric(decimalPlaces: 2)
+                ->money('RUB')
                 ->sortable();
         }
 
@@ -292,7 +292,10 @@ class WorkResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-briefcase')
+            ->emptyStateHeading('Работ пока нет')
+            ->emptyStateDescription('Когда появятся выполненные работы, здесь будут сумма, счёт и статус оплаты.');
     }
 
     public static function getPages(): array

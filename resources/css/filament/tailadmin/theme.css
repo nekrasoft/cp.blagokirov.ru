@@ -76,6 +76,22 @@
         @apply min-h-16 border-b border-gray-200 bg-white px-4 shadow-none ring-0 dark:border-gray-800 dark:bg-gray-900;
     }
 
+    .fi-header {
+        @apply gap-4;
+    }
+
+    .fi-header-heading {
+        @apply text-2xl font-semibold text-gray-900 sm:text-2xl dark:text-white;
+    }
+
+    .fi-header-subheading {
+        @apply mt-1 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-header-actions-ctn {
+        @apply flex-wrap gap-2;
+    }
+
     .fi-topbar-start .fi-logo,
     .fi-sidebar-header .fi-logo {
         @apply ms-0;
@@ -202,5 +218,61 @@
     .fi-ta-table,
     .fi-ta-table table {
         @apply rounded-lg;
+    }
+
+    .fi-ta-header {
+        @apply gap-4 px-5 py-4;
+    }
+
+    .fi-ta-header-heading {
+        @apply text-base font-semibold text-gray-900 dark:text-white;
+    }
+
+    .fi-ta-header-description {
+        @apply mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-ta-header-toolbar {
+        @apply border-t border-gray-100 px-5 py-3 dark:border-gray-800;
+    }
+
+    .fi-ta-table thead {
+        @apply bg-gray-50 dark:bg-white/[0.03];
+    }
+
+    .fi-ta-table tbody tr {
+        @apply transition-colors hover:bg-gray-50/80 dark:hover:bg-white/[0.03];
+    }
+
+    .fi-wi-stats-overview-stat {
+        @apply rounded-lg p-5 shadow-theme-xs ring-gray-200 transition duration-150 hover:-translate-y-0.5 hover:shadow-theme-md dark:ring-gray-800;
+    }
+
+    .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-value {
+        @apply text-2xl font-semibold text-gray-900 dark:text-white;
+    }
+
+    .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-label {
+        @apply text-sm font-medium text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-wi-chart .fi-wi-chart-canvas-ctn:not(.fi-wi-chart-canvas-ctn-no-aspect-ratio) {
+        @apply aspect-[1.65];
+    }
+
+    .fi-tabs {
+        @apply gap-1 rounded-lg bg-white p-1 shadow-theme-xs ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800;
+    }
+
+    .fi-tabs-item {
+        @apply rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors dark:text-gray-300;
+    }
+
+    .fi-tabs-item.fi-active {
+        @apply bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400;
+    }
+
+    .fi-badge {
+        @apply rounded-md;
     }
 }
