@@ -183,7 +183,7 @@ class WorkResource extends Resource
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
                 ->label('Сумма')
-                ->money('RUB')
+                ->formatStateUsing(fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ') . ' ₽')
                 ->sortable();
         }
 
