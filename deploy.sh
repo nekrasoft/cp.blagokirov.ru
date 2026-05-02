@@ -35,6 +35,8 @@ LARAVEL_DIR="${LARAVEL_DIR:-$SCRIPT_DIR}"
 PUBLIC_HTML_DIR="${PUBLIC_HTML_DIR:-$(cd "$LARAVEL_DIR/.." && pwd)/public_html}"
 PHP_BIN="${PHP_BIN:-php8.2}"
 RUN_MIGRATIONS=1
+BUILD_MANIFEST_RELATIVE_PATH="public/build/manifest.json"
+TAILADMIN_THEME_ENTRY="resources/css/filament/tailadmin/theme.css"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -60,7 +62,9 @@ done
 require_cmd "$PHP_BIN"
 require_cmd chmod
 require_cmd find
+require_cmd grep
 require_cmd ln
+require_cmd sed
 
 if [[ ! -d "$LARAVEL_DIR" ]]; then
     fail "Laravel directory does not exist: $LARAVEL_DIR"
@@ -72,6 +76,16 @@ fi
 
 if [[ ! -d "$PUBLIC_HTML_DIR" ]]; then
     fail "public_html directory does not exist: $PUBLIC_HTML_DIR"
+fi
+
+BUILD_MANIFEST="$LARAVEL_DIR/$BUILD_MANIFEST_RELATIVE_PATH"
+
+if [[ ! -f "$BUILD_MANIFEST" ]]; then
+    fail "$BUILD_MANIFEST_RELATIVE_PATH is missing. Run npm run build locally and deploy built assets."
+fi
+
+if ! grep -q "$TAILADMIN_THEME_ENTRY" "$BUILD_MANIFEST"; then
+    fail "TailAdmin Filament theme is missing from $BUILD_MANIFEST_RELATIVE_PATH. Run npm run build locally."
 fi
 
 if [[ -n "${COMPOSER_BIN:-}" ]]; then
@@ -125,6 +139,16 @@ fi
 
 log "Syncing public/ to public_html/ (excluding index.php)"
 "${SYNC_PUBLIC_CMD[@]}"
+
+PUBLIC_BUILD_MANIFEST="$PUBLIC_HTML_DIR/build/manifest.json"
+
+if [[ ! -f "$PUBLIC_BUILD_MANIFEST" ]]; then
+    fail "public_html/build/manifest.json is missing after public asset sync"
+fi
+
+if ! grep -q "$TAILADMIN_THEME_ENTRY" "$PUBLIC_BUILD_MANIFEST"; then
+    fail "TailAdmin Filament theme is missing from public_html/build/manifest.json after sync"
+fi
 
 if [[ ! -f "$PUBLIC_HTML_DIR/index.php" ]]; then
     log "Creating public_html/index.php"

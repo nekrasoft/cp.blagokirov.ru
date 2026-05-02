@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
 use App\Filament\Resources\WorkResource;
+use App\Filament\Support\TailAdminTheme;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -12,7 +13,6 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -25,7 +25,7 @@ class CounterpartyPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return TailAdminTheme::configure($panel)
             ->id('counterparty')
             ->path('billing')
             ->favicon(asset('favicon.svg'))
@@ -42,9 +42,6 @@ class CounterpartyPanelProvider extends PanelProvider
 
                 return 'Биллинг — ' . $counterpartyName;
             })
-            ->colors([
-                'primary' => Color::Blue,
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
             ->navigationItems([
