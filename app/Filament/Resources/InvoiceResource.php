@@ -256,7 +256,7 @@ class InvoiceResource extends Resource
             $columns[] = $pdfColumn;
         }
 
-        if (static::hasColumn('bitrix_task_id')) {
+        if (! $isCounterparty && static::hasColumn('bitrix_task_id')) {
             $columns[] = TextColumn::make('bitrix_task_id')
                 ->label('Задача')
                 ->color(
@@ -276,15 +276,13 @@ class InvoiceResource extends Resource
                 ->toggleable();
         }
 
-        if (static::hasColumn('created_at')) {
+        if (! $isCounterparty && static::hasColumn('created_at')) {
             $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создан')
                 ->dateTime('d.m.Y H:i')
                 ->sortable();
 
-            if (! $isCounterparty) {
-                $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
-            }
+            $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
 
             $columns[] = $createdAtColumn;
         }
