@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use Filament\Panel;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 
 final class TailAdminTheme
 {
@@ -26,6 +27,10 @@ final class TailAdminTheme
     {
         return $panel
             ->viteTheme('resources/css/filament/tailadmin/theme.css')
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn () => view('filament.tailadmin.theme-toggle'),
+            )
             ->colors([
                 'primary' => self::BRAND,
                 'gray' => Color::Gray,
