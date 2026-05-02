@@ -2,18 +2,18 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\CounterpartyResource\Pages\CreateCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\EditCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\ListCounterparties;
-use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Models\Counterparty;
 use App\Models\CounterpartyUser;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -205,6 +205,19 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('bitrix_company_id')) {
             $columns[] = TextColumn::make('bitrix_company_id')
                 ->label('Bitrix24 ID')
+                ->color(
+                    fn (Counterparty $record): string => static::buildBitrixCompanyUrl($record->bitrix_company_id) ? 'primary' : 'gray'
+                )
+                ->icon(
+                    fn (Counterparty $record): ?string => static::buildBitrixCompanyUrl($record->bitrix_company_id)
+                        ? 'heroicon-m-arrow-top-right-on-square'
+                        : null
+                )
+                ->iconPosition('after')
+                ->url(
+                    fn (Counterparty $record): ?string => static::buildBitrixCompanyUrl($record->bitrix_company_id),
+                    shouldOpenInNewTab: true,
+                )
                 ->sortable()
                 ->toggleable();
         }
@@ -321,6 +334,26 @@ class CounterpartyResource extends Resource
         }
 
         return static::$hasColumnCache[$column];
+    }
+
+    protected static function buildBitrixCompanyUrl(?int $companyId): ?string
+    {
+        if (! $companyId) {
+            return null;
+        }
+
+        $baseUrl = static::bitrixBaseUrl();
+
+        if ($baseUrl === '') {
+            return null;
+        }
+
+        return sprintf('%s/crm/company/details/%d/', $baseUrl, $companyId);
+    }
+
+    protected static function bitrixBaseUrl(): string
+    {
+        return rtrim(trim((string) config('services.bitrix24.base_url', '')), '/');
     }
 
     protected static function isCounterpartyAuthenticated(): bool
