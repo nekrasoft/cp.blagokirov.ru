@@ -12,6 +12,10 @@ class ListBunkers extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        if (! BunkerResource::canCreate()) {
+            return [];
+        }
+
         return [
             CreateAction::make(),
         ];

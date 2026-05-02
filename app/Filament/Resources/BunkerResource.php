@@ -25,6 +25,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Illuminate\Support\Str;
 use Throwable;
@@ -197,6 +198,7 @@ class BunkerResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
         if (static::hasColumn('number')) {
@@ -219,7 +221,7 @@ class BunkerResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
+        if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
@@ -301,31 +303,40 @@ class BunkerResource extends Resource
                 ->options(fn (): array => static::distinctOptions('waste_type'));
         }
 
-        if (static::hasColumn('contractor')) {
+        if (! $isCounterparty && static::hasColumn('contractor')) {
             $filters[] = SelectFilter::make('contractor')
                 ->label('Подрядчик')
                 ->options(fn (): array => static::distinctOptions('contractor'));
         }
 
-        if (static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
+        if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $filters[] = SelectFilter::make('counterparty_id')
                 ->label('Контрагент')
                 ->relationship('counterparty', static::counterpartyTitleAttribute());
+        }
+
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (! $isCounterparty) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
         }
 
         return $table
             ->defaultSort(static::hasColumn('number') ? 'number' : 'id')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
@@ -345,8 +356,59 @@ class BunkerResource extends Resource
     public static function canAccess(): bool
     {
         return static::hasTable()
-            && ! static::isCounterpartyAuthenticated()
             && parent::canAccess();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $counterpartyUser = static::getAuthenticatedCounterpartyUser();
+
+        if (! $counterpartyUser) {
+            return $query;
+        }
+
+        if (! static::hasColumn('counterparty_id')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $counterpartyId = (int) $counterpartyUser->counterparty_id;
+
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('counterparty_id', $counterpartyId);
+
+        if (static::hasColumn('district')) {
+            $districts = static::districtScopeValues($counterpartyUser);
+
+            if ($districts !== []) {
+                $query->whereIn('district', $districts);
+            }
+        }
+
+        return $query;
+    }
+
+    public static function canCreate(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool
@@ -423,7 +485,7 @@ class BunkerResource extends Resource
         }
 
         try {
-            return Bunker::query()
+            return static::applyCounterpartyScopeToQuery(Bunker::query())
                 ->whereNotNull($column)
                 ->where($column, '!=', '')
                 ->distinct()
@@ -437,6 +499,54 @@ class BunkerResource extends Resource
 
     protected static function isCounterpartyAuthenticated(): bool
     {
-        return Filament::auth()->user() instanceof CounterpartyUser;
+        return static::getAuthenticatedCounterpartyUser() !== null;
+    }
+
+    protected static function getAuthenticatedCounterpartyUser(): ?CounterpartyUser
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof CounterpartyUser ? $user : null;
+    }
+
+    protected static function applyCounterpartyScopeToQuery(Builder $query): Builder
+    {
+        $counterpartyUser = static::getAuthenticatedCounterpartyUser();
+
+        if (! $counterpartyUser || ! static::hasColumn('counterparty_id')) {
+            return $query;
+        }
+
+        $counterpartyId = (int) $counterpartyUser->counterparty_id;
+
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('counterparty_id', $counterpartyId);
+
+        if (static::hasColumn('district')) {
+            $districts = static::districtScopeValues($counterpartyUser);
+
+            if ($districts !== []) {
+                $query->whereIn('district', $districts);
+            }
+        }
+
+        return $query;
+    }
+
+    protected static function districtScopeValues(CounterpartyUser $counterpartyUser): array
+    {
+        $scope = trim((string) $counterpartyUser->district_scope);
+
+        if ($scope === '') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('trim', preg_split('/[;,\n]+/u', $scope) ?: []),
+            fn (string $district): bool => $district !== '',
+        )));
     }
 }
