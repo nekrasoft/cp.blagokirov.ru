@@ -1,0 +1,296 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/vendor/filament-panels/**/*';
+
+@theme {
+    --color-brand-50: #ecf3ff;
+    --color-brand-100: #dde9ff;
+    --color-brand-200: #c2d6ff;
+    --color-brand-300: #9cb9ff;
+    --color-brand-400: #7592ff;
+    --color-brand-500: #465fff;
+    --color-brand-600: #3641f5;
+    --color-brand-700: #2a31d8;
+    --color-brand-800: #252dae;
+    --color-brand-900: #262e89;
+    --color-brand-950: #161950;
+
+    --color-gray-25: #fcfcfd;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f2f4f7;
+    --color-gray-200: #e4e7ec;
+    --color-gray-300: #d0d5dd;
+    --color-gray-400: #98a2b3;
+    --color-gray-500: #667085;
+    --color-gray-600: #475467;
+    --color-gray-700: #344054;
+    --color-gray-800: #1d2939;
+    --color-gray-900: #101828;
+    --color-gray-950: #0c111d;
+
+    --shadow-theme-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+    --shadow-theme-sm: 0 1px 3px 0 rgb(16 24 40 / 0.1), 0 1px 2px 0 rgb(16 24 40 / 0.06);
+    --shadow-theme-md: 0 4px 8px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
+}
+
+@layer base {
+    html.fi {
+        background: var(--color-gray-50);
+    }
+
+    html.fi.dark {
+        background: var(--color-gray-950);
+    }
+
+    .fi-body {
+        @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-white;
+    }
+
+    .fi-body,
+    .fi-body * {
+        letter-spacing: 0;
+    }
+}
+
+@layer components {
+    .fi-layout,
+    .fi-main-ctn {
+        @apply bg-gray-50 dark:bg-gray-950;
+    }
+
+    .fi-main {
+        @apply px-4 py-5 sm:px-6 lg:px-8;
+    }
+
+    .fi-width-screen-2xl {
+        @apply max-w-screen-2xl;
+    }
+
+    .fi-topbar-ctn {
+        @apply z-40;
+    }
+
+    .fi-topbar {
+        @apply min-h-16 border-b border-gray-200 bg-white px-4 shadow-none ring-0 dark:border-gray-800 dark:bg-gray-900;
+    }
+
+    .fi-ta-theme-toggle {
+        @apply flex size-11 shrink-0 items-center justify-center;
+    }
+
+    .fi-ta-theme-toggle-btn,
+    .fi-topbar-database-notifications-btn {
+        @apply m-0 size-11 rounded-full border border-gray-200 bg-white text-gray-500 shadow-none ring-0 hover:bg-gray-50 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 dark:focus-visible:ring-brand-400;
+    }
+
+    .fi-ta-theme-toggle-btn > .fi-icon,
+    .fi-topbar-database-notifications-btn > .fi-icon {
+        @apply size-5;
+    }
+
+    .fi-dropdown-list:has(> .fi-theme-switcher) {
+        display: none;
+    }
+
+    .fi-header {
+        @apply gap-4;
+    }
+
+    .fi-header-heading {
+        @apply text-2xl font-semibold text-gray-900 sm:text-2xl dark:text-white;
+    }
+
+    .fi-header-subheading {
+        @apply mt-1 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-header-actions-ctn {
+        @apply flex-wrap gap-2;
+    }
+
+    .fi-topbar-start .fi-logo,
+    .fi-sidebar-header .fi-logo {
+        @apply ms-0;
+    }
+
+    .fi-sidebar,
+    .fi-sidebar.fi-sidebar-open {
+        @apply border-e border-gray-200 bg-white shadow-none ring-0 dark:border-gray-800 dark:bg-gray-900;
+    }
+
+    .fi-body-has-topbar .fi-sidebar {
+        @apply lg:top-16 lg:h-[calc(100dvh-4rem)];
+    }
+
+    .fi-sidebar-header {
+        @apply h-16 justify-start px-5;
+    }
+
+    .fi-body-has-topbar .fi-sidebar-header {
+        @apply bg-white px-5 ring-0 dark:bg-gray-900;
+    }
+
+    .fi-sidebar-nav {
+        @apply gap-y-6 px-5 py-6;
+    }
+
+    .fi-sidebar-nav-groups {
+        @apply mx-0 gap-y-5;
+    }
+
+    .fi-sidebar-group {
+        @apply gap-y-2;
+    }
+
+    .fi-sidebar-group-btn {
+        @apply px-3 py-1;
+    }
+
+    .fi-sidebar-group-label {
+        @apply text-xs font-semibold uppercase leading-5 text-gray-400;
+    }
+
+    .fi-sidebar-item-btn {
+        @apply gap-3 rounded-lg px-3 py-2.5;
+    }
+
+    .fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn {
+        @apply hover:bg-gray-100 focus-visible:bg-gray-100 dark:hover:bg-white/5 dark:focus-visible:bg-white/5;
+    }
+
+    .fi-sidebar-item-btn > .fi-icon {
+        @apply text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-sidebar-item-label {
+        @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+    }
+
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn {
+        @apply bg-brand-50 dark:bg-brand-500/10;
+    }
+
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn > .fi-icon,
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-label,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn > .fi-sidebar-item-label {
+        @apply text-brand-500 dark:text-brand-400;
+    }
+
+    .fi-sidebar-item-grouped-border-part {
+        @apply bg-gray-300 dark:bg-gray-600;
+    }
+
+    .fi-sidebar-item.fi-active .fi-sidebar-item-grouped-border-part {
+        @apply bg-brand-500 dark:bg-brand-400;
+    }
+
+    .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+    .fi-section.fi-aside:not(.fi-section-not-contained) > .fi-section-content-ctn,
+    .fi-ta-panel {
+        @apply rounded-lg bg-white shadow-theme-xs ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800;
+    }
+
+    .fi-section:not(.fi-section-not-contained) > .fi-section-header {
+        @apply px-5 py-4;
+    }
+
+    .fi-section:not(.fi-section-not-contained):not(.fi-divided) > .fi-section-content-ctn > .fi-section-content {
+        @apply p-5;
+    }
+
+    .fi-ta-logo {
+        @apply flex min-w-0 items-center gap-3 text-gray-900 dark:text-white;
+    }
+
+    .fi-ta-logo-mark {
+        @apply flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white shadow-theme-xs;
+    }
+
+    .fi-ta-logo-text {
+        @apply min-w-0 truncate text-base font-semibold leading-6;
+    }
+
+    .fi-btn,
+    .fi-icon-btn,
+    .fi-input-wrp,
+    .fi-select-input,
+    .fi-dropdown-panel,
+    .fi-modal-window,
+    .fi-ta-rounded {
+        @apply rounded-lg;
+    }
+
+    .fi-btn {
+        @apply shadow-theme-xs;
+    }
+
+    .fi-input-wrp,
+    .fi-select-input {
+        @apply border-gray-200 shadow-theme-xs dark:border-gray-800;
+    }
+
+    .fi-ta-table,
+    .fi-ta-table table {
+        @apply rounded-lg;
+    }
+
+    .fi-ta-header {
+        @apply gap-4 px-5 py-4;
+    }
+
+    .fi-ta-header-heading {
+        @apply text-base font-semibold text-gray-900 dark:text-white;
+    }
+
+    .fi-ta-header-description {
+        @apply mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-ta-header-toolbar {
+        @apply border-t border-gray-100 px-5 py-3 dark:border-gray-800;
+    }
+
+    .fi-ta-table thead {
+        @apply bg-gray-50 dark:bg-white/[0.03];
+    }
+
+    .fi-ta-table tbody tr {
+        @apply transition-colors hover:bg-gray-50/80 dark:hover:bg-white/[0.03];
+    }
+
+    .fi-wi-stats-overview-stat {
+        @apply rounded-lg p-5 shadow-theme-xs ring-gray-200 transition duration-150 hover:-translate-y-0.5 hover:shadow-theme-md dark:ring-gray-800;
+    }
+
+    .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-value {
+        @apply text-2xl font-semibold text-gray-900 dark:text-white;
+    }
+
+    .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-label {
+        @apply text-sm font-medium text-gray-500 dark:text-gray-400;
+    }
+
+    .fi-wi-chart .fi-wi-chart-canvas-ctn:not(.fi-wi-chart-canvas-ctn-no-aspect-ratio) {
+        @apply aspect-[1.65];
+    }
+
+    .fi-tabs {
+        @apply gap-1 rounded-lg bg-white p-1 shadow-theme-xs ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800;
+    }
+
+    .fi-tabs-item {
+        @apply rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors dark:text-gray-300;
+    }
+
+    .fi-tabs-item.fi-active {
+        @apply bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400;
+    }
+
+    .fi-badge {
+        @apply rounded-md;
+    }
+}

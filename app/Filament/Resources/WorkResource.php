@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\WorkResource\Pages\CreateWork;
 use App\Filament\Resources\WorkResource\Pages\EditWork;
 use App\Filament\Resources\WorkResource\Pages\ListWorks;
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\CounterpartyUser;
 use App\Models\Work;
@@ -31,6 +32,7 @@ use UnitEnum;
 
 class WorkResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = Work::class;
@@ -126,7 +128,7 @@ class WorkResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
+        if (! $isCounterparty && static::hasColumn('id')) {
             $columns[] = TextColumn::make('id')
                 ->label('ID')
                 ->sortable();
@@ -163,7 +165,7 @@ class WorkResource extends Resource
 
         if (static::hasColumn('note')) {
             $noteColumn = TextColumn::make('note')
-                ->label('Note')
+                ->label('Описание')
                 ->searchable()
                 ->wrap();
 
@@ -183,7 +185,7 @@ class WorkResource extends Resource
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
                 ->label('Сумма')
-                ->numeric(decimalPlaces: 2)
+                ->formatStateUsing(fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ') . ' ₽')
                 ->sortable();
         }
 
@@ -274,7 +276,7 @@ class WorkResource extends Resource
         $recordActions = [];
         $toolbarActions = [];
 
-        if (! $isCounterparty) {
+        if (! $isCounterparty && static::hasAdminWriteAccess()) {
             $recordActions = [
                 EditAction::make(),
                 DeleteAction::make(),
@@ -292,7 +294,10 @@ class WorkResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-briefcase')
+            ->emptyStateHeading('Работ пока нет')
+            ->emptyStateDescription('Когда появятся выполненные работы, здесь будут сумма, счёт и статус оплаты.');
     }
 
     public static function getPages(): array
@@ -362,22 +367,30 @@ class WorkResource extends Resource
 
     public static function canCreate(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool
