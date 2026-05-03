@@ -54,9 +54,9 @@ class AttentionBunkersTable extends TableWidget
 
         $columns[] = TextColumn::make('fill_level')
             ->label('Заполненность')
-            ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
+            ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
             ->badge()
-            ->color(fn ($state): string => ((int) $state >= 100) ? 'danger' : 'warning')
+            ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
             ->sortable();
 
         if (DashboardMetrics::hasColumn('bunkers', 'district')) {

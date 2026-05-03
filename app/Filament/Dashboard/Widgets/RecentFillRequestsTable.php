@@ -62,13 +62,9 @@ class RecentFillRequestsTable extends TableWidget
         if (DashboardMetrics::hasColumn('bunker_fill_requests', 'fill_level')) {
             $columns[] = TextColumn::make('fill_level')
                 ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
+                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
                 ->badge()
-                ->color(fn ($state): string => match (true) {
-                    (int) $state >= 100 => 'danger',
-                    (int) $state >= 70 => 'warning',
-                    default => 'success',
-                });
+                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state));
         }
 
         if (DashboardMetrics::hasColumn('bunker_fill_requests', 'district')) {

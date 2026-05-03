@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BunkerFillRequestResource\Pages\ListBunkerFillRequests;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\BunkerFillRequest;
 use App\Models\CounterpartyUser;
 use BackedEnum;
@@ -77,18 +78,14 @@ class BunkerFillRequestResource extends Resource
         if (static::hasColumn('fill_level')) {
             $columns[] = TextColumn::make('fill_level')
                 ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
+                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
                 ->badge()
-                ->color(fn ($state): string => match (true) {
-                    (int) $state >= 100 => 'danger',
-                    (int) $state >= 70 => 'warning',
-                    default => 'success',
-                })
+                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
                 ->sortable();
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
@@ -121,7 +118,7 @@ class BunkerFillRequestResource extends Resource
             $columns[] = TextColumn::make('executed_at')
                 ->label('Исполнение')
                 ->badge()
-                ->formatStateUsing(fn ($state): string => $state ? 'Исполнена ' . $state->format('d.m.Y') : 'Не исполнена')
+                ->formatStateUsing(fn ($state): string => $state ? 'Исполнена '.$state->format('d.m.Y') : 'Не исполнена')
                 ->color(fn ($state): string => $state ? 'success' : 'warning')
                 ->sortable();
         }

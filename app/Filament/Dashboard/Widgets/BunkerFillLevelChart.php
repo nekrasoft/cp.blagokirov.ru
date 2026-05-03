@@ -24,12 +24,7 @@ class BunkerFillLevelChart extends ChartWidget
                 [
                     'label' => 'Бункеры',
                     'data' => $buckets['data'],
-                    'backgroundColor' => [
-                        '#12b76a',
-                        '#0ba5ec',
-                        '#f79009',
-                        '#f04438',
-                    ],
+                    'backgroundColor' => DashboardMetrics::bunkerFillBucketChartColors(),
                     'borderWidth' => 0,
                 ],
             ],

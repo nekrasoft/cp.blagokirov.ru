@@ -10,12 +10,27 @@ use App\Models\Work;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 
 final class DashboardMetrics
 {
+    private const BUNKER_FILL_BUCKET_LABELS = ['0-49%', '50-69%', '70-99%', '100%'];
+
+    private const BUNKER_FILL_BUCKET_CHART_COLORS = [
+        '#12b76a',
+        '#0ba5ec',
+        '#f79009',
+        '#f04438',
+    ];
+
+    private const BUNKER_FILL_BUCKET_BADGE_COLORS = [
+        'success',
+        'info',
+        'warning',
+        'danger',
+    ];
+
     /** @var array<string, bool> */
     private static array $tableCache = [];
 
@@ -357,8 +372,8 @@ final class DashboardMetrics
      */
     public static function bunkerFillBuckets(?CounterpartyUser $counterpartyUser = null): array
     {
-        $labels = ['0-49%', '50-69%', '70-99%', '100%'];
-        $buckets = [0, 0, 0, 0];
+        $labels = self::bunkerFillBucketLabels();
+        $buckets = array_fill(0, count($labels), 0);
 
         if (! self::hasColumn('bunkers', 'fill_level')) {
             return ['labels' => $labels, 'data' => $buckets];
@@ -372,23 +387,46 @@ final class DashboardMetrics
 
         try {
             $query->get(['fill_level'])->each(function (Bunker $bunker) use (&$buckets): void {
-                $fillLevel = (int) ($bunker->fill_level ?? 0);
-
-                if ($fillLevel >= 100) {
-                    $buckets[3]++;
-                } elseif ($fillLevel >= 70) {
-                    $buckets[2]++;
-                } elseif ($fillLevel >= 50) {
-                    $buckets[1]++;
-                } else {
-                    $buckets[0]++;
-                }
+                $buckets[self::bunkerFillLevelBucketIndex($bunker->fill_level)]++;
             });
         } catch (Throwable) {
             //
         }
 
         return ['labels' => $labels, 'data' => $buckets];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function bunkerFillBucketLabels(): array
+    {
+        return self::BUNKER_FILL_BUCKET_LABELS;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function bunkerFillBucketChartColors(): array
+    {
+        return self::BUNKER_FILL_BUCKET_CHART_COLORS;
+    }
+
+    public static function bunkerFillLevelBucketIndex(mixed $fillLevel): int
+    {
+        $fillLevel = (int) ($fillLevel ?? 0);
+
+        return match (true) {
+            $fillLevel >= 100 => 3,
+            $fillLevel >= 70 => 2,
+            $fillLevel >= 50 => 1,
+            default => 0,
+        };
+    }
+
+    public static function bunkerFillLevelColor(mixed $fillLevel): string
+    {
+        return self::BUNKER_FILL_BUCKET_BADGE_COLORS[self::bunkerFillLevelBucketIndex($fillLevel)];
     }
 
     public static function formatInteger(int|float $value): string
@@ -398,7 +436,7 @@ final class DashboardMetrics
 
     public static function formatMoney(int|float $value): string
     {
-        return number_format((float) $value, 0, ',', ' ') . ' ₽';
+        return number_format((float) $value, 0, ',', ' ').' ₽';
     }
 
     /**

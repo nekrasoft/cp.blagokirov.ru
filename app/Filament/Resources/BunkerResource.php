@@ -7,14 +7,15 @@ use App\Filament\Resources\BunkerResource\Pages\EditBunker;
 use App\Filament\Resources\BunkerResource\Pages\ListBunkers;
 use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\Bunker;
 use App\Models\CounterpartyUser;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -213,18 +214,14 @@ class BunkerResource extends Resource
         if (static::hasColumn('fill_level')) {
             $columns[] = TextColumn::make('fill_level')
                 ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
+                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
                 ->badge()
-                ->color(fn ($state): string => match (true) {
-                    (int) $state >= 100 => 'danger',
-                    (int) $state >= 70 => 'warning',
-                    default => 'success',
-                })
+                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
                 ->sortable();
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
