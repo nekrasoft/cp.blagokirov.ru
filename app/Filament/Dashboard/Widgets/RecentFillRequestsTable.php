@@ -35,7 +35,7 @@ class RecentFillRequestsTable extends TableWidget
             ->columns($this->columns())
             ->paginated(false)
             ->emptyStateHeading('Заявок пока нет')
-            ->emptyStateDescription('Когда появятся заявки на заполнение, они будут показаны здесь.')
+            ->emptyStateDescription('Когда появятся заявки на вывоз, они будут показаны здесь.')
             ->emptyStateIcon('heroicon-o-inbox');
     }
 

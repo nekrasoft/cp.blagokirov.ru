@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class FillRequestsTrendChart extends ChartWidget
 {
-    protected ?string $heading = 'Заявки на заполнение';
+    protected ?string $heading = 'Заявки на вывоз';
 
     protected ?string $description = 'Последние 14 дней';
 
