@@ -34,13 +34,17 @@ class CounterpartyPanelProvider extends PanelProvider
             ->homeUrl(fn (): string => CounterpartyDashboard::getUrl(panel: 'counterparty'))
             ->brandName(function (): string {
                 $user = Filament::auth()->user();
-                $counterpartyName = trim((string) ($user?->counterparty?->name ?? ''));
+                $counterparty = $user?->counterparty;
+                $counterpartyName = trim((string) ($counterparty?->name ?? ''));
+                $contract = trim((string) ($counterparty?->contract ?? ''));
 
                 if ($counterpartyName === '') {
                     return 'Биллинг';
                 }
 
-                return 'Биллинг — ' . $counterpartyName;
+                $brandName = 'Биллинг — ' . $counterpartyName;
+
+                return $contract === '' ? $brandName : $brandName . ', ' . $contract;
             })
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
