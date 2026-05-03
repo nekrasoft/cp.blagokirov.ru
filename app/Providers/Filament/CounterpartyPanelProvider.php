@@ -36,15 +36,13 @@ class CounterpartyPanelProvider extends PanelProvider
                 $user = Filament::auth()->user();
                 $counterparty = $user?->counterparty;
                 $counterpartyName = trim((string) ($counterparty?->name ?? ''));
-                $contract = trim((string) ($counterparty?->contract ?? ''));
-
                 if ($counterpartyName === '') {
                     return 'Биллинг';
                 }
 
                 $brandName = 'Биллинг — ' . $counterpartyName;
 
-                return $contract === '' ? $brandName : $brandName . ', ' . $contract;
+                return $brandName;
             })
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
