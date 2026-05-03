@@ -169,6 +169,15 @@ class BunkerFillLevelForecastService
 
     public function completedCycleDurationsFromEvents(iterable $events): array
     {
+        $events = collect($events)
+            ->sortBy(fn (mixed $event): int => $this->eventTimestamp($event)->getTimestamp())
+            ->values();
+        $executedRequestDurations = $this->completedCycleDurationsFromExecutedRequests($events);
+
+        if ($executedRequestDurations !== []) {
+            return $executedRequestDurations;
+        }
+
         $startedAt = null;
         $durations = [];
 
@@ -190,6 +199,28 @@ class BunkerFillLevelForecastService
                 }
 
                 $startedAt = null;
+            }
+        }
+
+        return $durations;
+    }
+
+    private function completedCycleDurationsFromExecutedRequests(iterable $events): array
+    {
+        $lastResetAt = null;
+        $durations = [];
+
+        foreach ($events as $event) {
+            $fullAt = $this->eventTimestampOrNull($event, self::TIME_COLUMN);
+
+            if ($fullAt && $this->eventLevel($event) >= 100 && $lastResetAt && $fullAt->greaterThan($lastResetAt)) {
+                $durations[] = $fullAt->getTimestamp() - $lastResetAt->getTimestamp();
+            }
+
+            $executedAt = $this->eventExecutedAt($event);
+
+            if ($executedAt) {
+                $lastResetAt = $executedAt;
             }
         }
 
@@ -232,8 +263,12 @@ class BunkerFillLevelForecastService
         $resetAt = null;
 
         foreach ($events as $event) {
-            if ($this->eventLevel($event) <= 0) {
-                $resetAt = $this->eventTimestamp($event);
+            $eventResetAt = $this->eventLevel($event) <= 0
+                ? $this->eventTimestamp($event)
+                : $this->eventExecutedAt($event);
+
+            if ($eventResetAt && (! $resetAt || $eventResetAt->greaterThan($resetAt))) {
+                $resetAt = $eventResetAt;
             }
         }
 
@@ -333,6 +368,7 @@ class BunkerFillLevelForecastService
             'bunker_id',
             'fill_level',
             self::TIME_COLUMN,
+            'executed_at',
             'filled_by',
             'fill_level_source',
         ]);
@@ -412,7 +448,32 @@ class BunkerFillLevelForecastService
 
     private function eventTimestamp(mixed $event): CarbonImmutable
     {
-        $value = data_get($event, self::TIME_COLUMN);
+        return $this->eventTimestampOrNull($event, self::TIME_COLUMN)
+            ?? CarbonImmutable::parse((string) data_get($event, self::TIME_COLUMN));
+    }
+
+    private function eventExecutedAt(mixed $event): ?CarbonImmutable
+    {
+        $executedAt = $this->eventTimestampOrNull($event, 'executed_at');
+
+        if (! $executedAt) {
+            return null;
+        }
+
+        if ($executedAt->format('H:i:s') === '00:00:00') {
+            return $executedAt->endOfDay();
+        }
+
+        return $executedAt;
+    }
+
+    private function eventTimestampOrNull(mixed $event, string $column): ?CarbonImmutable
+    {
+        $value = data_get($event, $column);
+
+        if (! $value) {
+            return null;
+        }
 
         if ($value instanceof CarbonInterface) {
             return CarbonImmutable::instance($value);

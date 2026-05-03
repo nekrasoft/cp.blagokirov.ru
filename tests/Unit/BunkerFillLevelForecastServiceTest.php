@@ -34,4 +34,29 @@ class BunkerFillLevelForecastServiceTest extends TestCase
 
         $this->assertSame([345600, 259200], $durations);
     }
+
+    public function test_completed_cycles_are_built_from_request_execution_to_next_full_request(): void
+    {
+        $service = new BunkerFillLevelForecastService;
+
+        $durations = $service->completedCycleDurationsFromEvents([
+            [
+                'fill_level' => 100,
+                'filled_at' => CarbonImmutable::parse('2026-01-01 09:00:00'),
+                'executed_at' => CarbonImmutable::parse('2026-01-01 12:00:00'),
+            ],
+            [
+                'fill_level' => 100,
+                'filled_at' => CarbonImmutable::parse('2026-01-05 12:00:00'),
+                'executed_at' => CarbonImmutable::parse('2026-01-05 18:00:00'),
+            ],
+            [
+                'fill_level' => 100,
+                'filled_at' => CarbonImmutable::parse('2026-01-08 18:00:00'),
+                'executed_at' => null,
+            ],
+        ]);
+
+        $this->assertSame([345600, 259200], $durations);
+    }
 }
