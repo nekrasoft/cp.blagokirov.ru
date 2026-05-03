@@ -2,7 +2,7 @@
 
 namespace App\Filament\Auth\Responses;
 
-use App\Filament\Resources\WorkResource;
+use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as Responsable;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +18,7 @@ class LoginResponse implements Responsable
             return redirect()->intended(Filament::getUrl());
         }
 
-        $fallbackUrl = WorkResource::getUrl(panel: 'counterparty');
+        $fallbackUrl = CounterpartyDashboard::getUrl(panel: 'counterparty');
         $intendedUrl = (string) session()->pull('url.intended', '');
 
         if ($this->isSafeCounterpartyUrl($intendedUrl)) {
@@ -53,4 +53,3 @@ class LoginResponse implements Responsable
         return str_starts_with($path, '/billing/');
     }
 }
-
