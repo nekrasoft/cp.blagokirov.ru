@@ -172,12 +172,21 @@ class BunkerFillLevelForecastService
         $events = collect($events)
             ->sortBy(fn (mixed $event): int => $this->eventTimestamp($event)->getTimestamp())
             ->values();
-        $executedRequestDurations = $this->completedCycleDurationsFromExecutedRequests($events);
+        $explicitResetDurations = $this->completedCycleDurationsFromExplicitResets($events);
 
-        if ($executedRequestDurations !== []) {
-            return $executedRequestDurations;
+        if ($explicitResetDurations !== []) {
+            return $explicitResetDurations;
         }
 
+        $executedRequestDurations = $this->completedCycleDurationsFromExecutedRequests($events);
+
+        return $executedRequestDurations !== []
+            ? $executedRequestDurations
+            : $this->completedCycleDurationsFromFullRequestIntervals($events);
+    }
+
+    private function completedCycleDurationsFromExplicitResets(iterable $events): array
+    {
         $startedAt = null;
         $durations = [];
 
@@ -200,6 +209,28 @@ class BunkerFillLevelForecastService
 
                 $startedAt = null;
             }
+        }
+
+        return $durations;
+    }
+
+    private function completedCycleDurationsFromFullRequestIntervals(iterable $events): array
+    {
+        $lastFullAt = null;
+        $durations = [];
+
+        foreach ($events as $event) {
+            if ($this->eventLevel($event) < 100) {
+                continue;
+            }
+
+            $fullAt = $this->eventTimestamp($event);
+
+            if ($lastFullAt && $fullAt->greaterThan($lastFullAt)) {
+                $durations[] = $fullAt->getTimestamp() - $lastFullAt->getTimestamp();
+            }
+
+            $lastFullAt = $fullAt;
         }
 
         return $durations;
