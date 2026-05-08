@@ -163,7 +163,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
     {
         $user = new CounterpartyUser([
             'counterparty_id' => 10,
-            'district_scope' => 'Центральный',
+            'district_scope' => 'Центр',
         ]);
 
         $user->setRelation('counterparty', null);

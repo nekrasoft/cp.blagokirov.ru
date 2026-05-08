@@ -499,7 +499,11 @@ final class DashboardMetrics
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->whereIn("{$table}.district", $districts);
+        return $query->where(function (Builder $districtQuery) use ($districts, $table): void {
+            foreach ($districts as $district) {
+                $districtQuery->orWhereLike("{$table}.district", "%{$district}%");
+            }
+        });
     }
 
     /**
