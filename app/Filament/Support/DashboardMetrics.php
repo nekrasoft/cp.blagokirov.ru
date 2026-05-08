@@ -205,7 +205,7 @@ final class DashboardMetrics
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $counterpartyNames): void {
+        $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $counterpartyNames): void {
             if ($hasInvoiceScope) {
                 $scopeQuery->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('counterparty_id', $counterpartyId));
             }
@@ -226,6 +226,8 @@ final class DashboardMetrics
                 }
             }
         });
+
+        return self::applyDistrictScopeToWorksQuery($query, $counterpartyUser);
     }
 
     public static function applyDistrictScopeToBunkersQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
@@ -236,6 +238,21 @@ final class DashboardMetrics
     public static function applyDistrictScopeToFillRequestsQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
     {
         return self::applyDirectDistrictScope($query, 'bunker_fill_requests', $counterpartyUser);
+    }
+
+    public static function applyDistrictScopeToWorksQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
+    {
+        $districts = self::districtScopeValues($counterpartyUser);
+
+        if ($districts === []) {
+            return $query;
+        }
+
+        if (! self::hasColumn('works', 'note')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return self::applyStringContainsScope($query, 'works.note', $districts);
     }
 
     public static function safeCount(?Builder $query): int
@@ -499,9 +516,17 @@ final class DashboardMetrics
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function (Builder $districtQuery) use ($districts, $table): void {
-            foreach ($districts as $district) {
-                $districtQuery->orWhereLike("{$table}.district", "%{$district}%");
+        return self::applyStringContainsScope($query, "{$table}.district", $districts);
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     */
+    private static function applyStringContainsScope(Builder $query, string $column, array $values): Builder
+    {
+        return $query->where(function (Builder $scopeQuery) use ($column, $values): void {
+            foreach ($values as $value) {
+                $scopeQuery->orWhereLike($column, "%{$value}%");
             }
         });
     }

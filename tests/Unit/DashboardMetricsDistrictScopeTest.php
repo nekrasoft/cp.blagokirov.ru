@@ -100,7 +100,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
         $this->assertSame([1, 2], $ids);
     }
 
-    public function test_works_query_ignores_district_scope(): void
+    public function test_works_query_applies_district_scope_to_note(): void
     {
         $this->createInvoicesAndWorksTables(includeWorksDistrict: true);
 
@@ -110,9 +110,9 @@ class DashboardMetricsDistrictScopeTest extends TestCase
             ['id' => 3, 'counterparty_id' => 20],
         ]);
         DB::table('works')->insert([
-            ['id' => 1, 'invoice_id' => 1, 'district' => 'Центральный'],
-            ['id' => 2, 'invoice_id' => 2, 'district' => 'Северный'],
-            ['id' => 3, 'invoice_id' => 3, 'district' => 'Центральный'],
+            ['id' => 1, 'invoice_id' => 1, 'district' => 'Северный', 'note' => 'Вывоз, Центральный район'],
+            ['id' => 2, 'invoice_id' => 2, 'district' => 'Центральный', 'note' => 'Вывоз, Северный район'],
+            ['id' => 3, 'invoice_id' => 3, 'district' => 'Северный', 'note' => 'Вывоз, Центральный район'],
         ]);
 
         $ids = DashboardMetrics::worksQuery($this->counterpartyUser())
@@ -120,7 +120,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
             ->pluck('id')
             ->all();
 
-        $this->assertSame([1, 2], $ids);
+        $this->assertSame([1], $ids);
     }
 
     public function test_invoices_query_does_not_require_district_resolution(): void
@@ -152,6 +152,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
         Schema::create('works', function ($table) use ($includeWorksDistrict): void {
             $table->id();
             $table->unsignedInteger('invoice_id')->nullable();
+            $table->string('note')->nullable();
 
             if ($includeWorksDistrict) {
                 $table->string('district')->nullable();
