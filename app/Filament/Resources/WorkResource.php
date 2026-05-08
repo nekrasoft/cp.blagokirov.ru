@@ -7,7 +7,6 @@ use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\WorkResource\Pages\CreateWork;
 use App\Filament\Resources\WorkResource\Pages\EditWork;
 use App\Filament\Resources\WorkResource\Pages\ListWorks;
-use App\Filament\Support\DashboardMetrics;
 use App\Models\CounterpartyUser;
 use App\Models\Work;
 use BackedEnum;
@@ -343,7 +342,7 @@ class WorkResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $hasInvoiceColumn, $counterpartyNames): void {
+        return $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $hasInvoiceColumn, $counterpartyNames): void {
             if ($hasInvoiceScope) {
                 $scopeQuery->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('counterparty_id', $counterpartyId));
             }
@@ -364,8 +363,6 @@ class WorkResource extends Resource
                 }
             }
         });
-
-        return DashboardMetrics::applyDistrictScopeToWorksQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool

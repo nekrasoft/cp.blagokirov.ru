@@ -16,6 +16,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
         parent::setUp();
 
         $this->resetDashboardMetricsCache();
+        Schema::dropIfExists('bunkers');
         Schema::dropIfExists('works');
         Schema::dropIfExists('invoices');
         Schema::dropIfExists('bunker_fill_requests');
@@ -23,6 +24,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
 
     protected function tearDown(): void
     {
+        Schema::dropIfExists('bunkers');
         Schema::dropIfExists('works');
         Schema::dropIfExists('invoices');
         Schema::dropIfExists('bunker_fill_requests');
@@ -53,7 +55,29 @@ class DashboardMetricsDistrictScopeTest extends TestCase
         $this->assertSame([1], $ids);
     }
 
-    public function test_invoices_query_applies_district_scope_through_works(): void
+    public function test_bunkers_query_applies_counterparty_district_scope(): void
+    {
+        Schema::create('bunkers', function ($table): void {
+            $table->string('id')->primary();
+            $table->unsignedInteger('counterparty_id');
+            $table->string('district')->nullable();
+        });
+
+        DB::table('bunkers')->insert([
+            ['id' => 'a', 'counterparty_id' => 10, 'district' => 'Центральный'],
+            ['id' => 'b', 'counterparty_id' => 10, 'district' => 'Северный'],
+            ['id' => 'c', 'counterparty_id' => 20, 'district' => 'Центральный'],
+        ]);
+
+        $ids = DashboardMetrics::bunkersQuery($this->counterpartyUser())
+            ?->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame(['a'], $ids);
+    }
+
+    public function test_invoices_query_ignores_district_scope(): void
     {
         $this->createInvoicesAndWorksTables(includeWorksDistrict: true);
 
@@ -73,10 +97,10 @@ class DashboardMetricsDistrictScopeTest extends TestCase
             ->pluck('id')
             ->all();
 
-        $this->assertSame([1], $ids);
+        $this->assertSame([1, 2], $ids);
     }
 
-    public function test_works_query_applies_direct_district_scope(): void
+    public function test_works_query_ignores_district_scope(): void
     {
         $this->createInvoicesAndWorksTables(includeWorksDistrict: true);
 
@@ -96,10 +120,10 @@ class DashboardMetricsDistrictScopeTest extends TestCase
             ->pluck('id')
             ->all();
 
-        $this->assertSame([1], $ids);
+        $this->assertSame([1, 2], $ids);
     }
 
-    public function test_invoices_query_returns_no_rows_when_district_scope_cannot_be_resolved(): void
+    public function test_invoices_query_does_not_require_district_resolution(): void
     {
         $this->createInvoicesAndWorksTables(includeWorksDistrict: false);
 
@@ -115,7 +139,7 @@ class DashboardMetricsDistrictScopeTest extends TestCase
             ->pluck('id')
             ->all();
 
-        $this->assertSame([], $ids);
+        $this->assertSame([1], $ids);
     }
 
     private function createInvoicesAndWorksTables(bool $includeWorksDistrict): void

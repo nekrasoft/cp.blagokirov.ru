@@ -7,7 +7,6 @@ use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
-use App\Filament\Support\DashboardMetrics;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
@@ -384,9 +383,7 @@ class InvoiceResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        $query->where('counterparty_id', $counterpartyId);
-
-        return DashboardMetrics::applyDistrictScopeToInvoicesQuery($query, $counterpartyUser);
+        return $query->where('counterparty_id', $counterpartyId);
     }
 
     public static function canCreate(): bool
