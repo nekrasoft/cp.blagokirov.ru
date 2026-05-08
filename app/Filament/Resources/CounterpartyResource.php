@@ -9,6 +9,7 @@ use App\Filament\Resources\CounterpartyResource\Pages\EditCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\ListCounterparties;
 use App\Models\Counterparty;
 use App\Models\CounterpartyUser;
+use App\Rules\EmailList;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -75,14 +76,14 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('email')) {
             $components[] = TextInput::make('email')
                 ->label('Email')
-                ->rule(static::emailListValidationRule())
+                ->rule(new EmailList)
                 ->maxLength(255);
         }
 
         if (static::hasColumn('email_accountant')) {
             $components[] = TextInput::make('email_accountant')
                 ->label('Email бухгалтера')
-                ->rule(static::emailListValidationRule())
+                ->rule(new EmailList)
                 ->maxLength(255);
         }
 
@@ -361,33 +362,5 @@ class CounterpartyResource extends Resource
     protected static function isCounterpartyAuthenticated(): bool
     {
         return Filament::auth()->user() instanceof CounterpartyUser;
-    }
-
-    protected static function emailListValidationRule(): \Closure
-    {
-        return static function (string $attribute, mixed $value, \Closure $fail): void {
-            $value = trim((string) $value);
-
-            if ($value === '') {
-                return;
-            }
-
-            $emails = array_filter(
-                array_map('trim', preg_split('/[;,\n]+/u', $value) ?: []),
-                fn (string $email): bool => $email !== '',
-            );
-
-            if ($emails === []) {
-                return;
-            }
-
-            foreach ($emails as $email) {
-                if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-                    $fail('Поле Email должно содержать корректный email или список email через запятую или точку с запятой.');
-
-                    return;
-                }
-            }
-        };
     }
 }
