@@ -2,17 +2,18 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\CounterpartyUserResource\Pages\CreateCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\EditCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\ListCounterpartyUsers;
-use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Models\CounterpartyUser;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -31,6 +32,7 @@ use UnitEnum;
 class CounterpartyUserResource extends Resource
 {
     use AuthorizesAdminWrites;
+    use PreservesNavigationSearch;
 
     protected static ?string $model = CounterpartyUser::class;
 

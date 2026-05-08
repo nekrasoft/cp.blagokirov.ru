@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\CounterpartyResource\Pages\CreateCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\EditCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\ListCounterparties;
@@ -29,6 +30,7 @@ use UnitEnum;
 class CounterpartyResource extends Resource
 {
     use AuthorizesAdminWrites;
+    use PreservesNavigationSearch;
 
     protected static ?string $model = Counterparty::class;
 

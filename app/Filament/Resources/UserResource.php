@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
@@ -28,6 +29,7 @@ use UnitEnum;
 class UserResource extends Resource
 {
     use AuthorizesAdminWrites;
+    use PreservesNavigationSearch;
 
     protected static ?string $model = User::class;
 
