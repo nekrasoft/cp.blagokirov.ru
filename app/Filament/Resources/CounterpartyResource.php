@@ -156,14 +156,14 @@ class CounterpartyResource extends Resource
             $columns[] = TextColumn::make('inn')
                 ->label('ИНН')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('kpp')) {
             $columns[] = TextColumn::make('kpp')
                 ->label('КПП')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('email')) {
@@ -179,14 +179,14 @@ class CounterpartyResource extends Resource
                 ->label('Email бухгалтера')
                 ->searchable()
                 ->copyable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('phone')) {
             $columns[] = TextColumn::make('phone')
                 ->label('Телефон')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('note')) {
@@ -194,7 +194,7 @@ class CounterpartyResource extends Resource
                 ->label('Примечание')
                 ->searchable()
                 ->limit(40)
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('contract')) {
