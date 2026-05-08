@@ -51,12 +51,21 @@ trait PreservesNavigationSearch
 
     protected static function currentSearchQueryParameter(): array
     {
-        $search = request()->query('search');
-
-        if ($search === null) {
-            $search = static::searchQueryFromUrl(request()->header('Referer'));
+        if (request()->query->has('search')) {
+            return static::normalizeSearchQueryParameter(request()->query('search'));
         }
 
+        $livewireSearch = static::searchQueryFromLivewireRequest();
+
+        if ($livewireSearch['hasSearch']) {
+            return static::normalizeSearchQueryParameter($livewireSearch['search']);
+        }
+
+        return static::normalizeSearchQueryParameter(static::searchQueryFromUrl(request()->header('Referer')));
+    }
+
+    protected static function normalizeSearchQueryParameter(mixed $search): array
+    {
         if (is_array($search)) {
             $search = reset($search);
         }
@@ -69,6 +78,44 @@ trait PreservesNavigationSearch
 
         return [
             'search' => $search,
+        ];
+    }
+
+    /**
+     * @return array{hasSearch: bool, search: mixed}
+     */
+    protected static function searchQueryFromLivewireRequest(): array
+    {
+        $components = request()->input('components');
+
+        if (! is_array($components)) {
+            $requestInput = request()->request->all();
+            $components = $requestInput['components'] ?? null;
+        }
+
+        if (! is_array($components)) {
+            return [
+                'hasSearch' => false,
+                'search' => null,
+            ];
+        }
+
+        foreach ($components as $component) {
+            $updates = $component['updates'] ?? null;
+
+            if (! is_array($updates) || ! array_key_exists('tableSearch', $updates)) {
+                continue;
+            }
+
+            return [
+                'hasSearch' => true,
+                'search' => $updates['tableSearch'],
+            ];
+        }
+
+        return [
+            'hasSearch' => false,
+            'search' => null,
         ];
     }
 

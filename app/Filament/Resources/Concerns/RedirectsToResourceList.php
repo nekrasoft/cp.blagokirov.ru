@@ -49,17 +49,7 @@ trait RedirectsToResourceList
 
     protected function preservedListSearchQueryParameter(): array
     {
-        $search = $this->preservedListSearch;
-
-        if ($search === null || trim($search) === '') {
-            $search = $this->searchQueryFromUrl($this->previousUrl);
-        }
-
-        if ($search === null || trim($search) === '') {
-            $search = $this->searchQueryFromUrl(request()->header('Referer'));
-        }
-
-        $search = trim((string) $search);
+        $search = trim((string) $this->preservedListSearch);
 
         if ($search === '') {
             return [];
@@ -68,32 +58,5 @@ trait RedirectsToResourceList
         return [
             'search' => $search,
         ];
-    }
-
-    protected function searchQueryFromUrl(?string $url): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        $queryString = parse_url($url, PHP_URL_QUERY);
-
-        if (! is_string($queryString)) {
-            return null;
-        }
-
-        parse_str($queryString, $query);
-
-        $search = $query['search'] ?? null;
-
-        if (is_array($search)) {
-            $search = reset($search);
-        }
-
-        if ($search === false || $search === null) {
-            return null;
-        }
-
-        return trim((string) $search);
     }
 }
