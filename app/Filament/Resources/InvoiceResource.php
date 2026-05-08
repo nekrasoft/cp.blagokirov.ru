@@ -2,19 +2,20 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
-use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
-use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -169,7 +170,7 @@ class InvoiceResource extends Resource
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
@@ -221,7 +222,7 @@ class InvoiceResource extends Resource
             $paidAmountColumn = TextColumn::make('paid_amount')
                 ->label('Оплачено')
                 ->formatStateUsing(
-                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ') . ' ₽'
+                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ').' ₽'
                 )
                 ->sortable();
 
@@ -251,7 +252,7 @@ class InvoiceResource extends Resource
                 ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
                 ->formatStateUsing(
                     fn (?string $state, Invoice $record): ?string => filled($state)
-                        ? 'Открыть счет №' . ($record->invoice_number ?: $record->id)
+                        ? 'Открыть счет №'.($record->invoice_number ?: $record->id)
                         : null
                 )
                 ->color(fn (Invoice $record): string => filled($record->pdf_url) ? 'primary' : 'gray')
@@ -377,7 +378,15 @@ class InvoiceResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('counterparty_id', $counterpartyUser->counterparty_id);
+        $counterpartyId = (int) $counterpartyUser->counterparty_id;
+
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('counterparty_id', $counterpartyId);
+
+        return DashboardMetrics::applyDistrictScopeToInvoicesQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool

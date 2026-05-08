@@ -2,13 +2,10 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Support\DashboardMetrics;
 use App\Models\CounterpartyUser;
-use App\Models\Invoice;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Schema as SchemaFacade;
-use Throwable;
 
 class UnpaidInvoicesWarning extends Widget
 {
@@ -24,11 +21,7 @@ class UnpaidInvoicesWarning extends Widget
             return false;
         }
 
-        if (! static::canCheckUnpaidInvoices()) {
-            return false;
-        }
-
-        return static::getUnpaidInvoicesCount((int) $user->counterparty_id) > 0;
+        return static::getUnpaidInvoicesCount($user) > 0;
     }
 
     /**
@@ -38,38 +31,19 @@ class UnpaidInvoicesWarning extends Widget
     {
         $user = Filament::auth()->user();
 
-        if (! $user instanceof CounterpartyUser || (int) $user->counterparty_id <= 0 || ! static::canCheckUnpaidInvoices()) {
+        if (! $user instanceof CounterpartyUser || (int) $user->counterparty_id <= 0) {
             return [
                 'unpaidInvoicesCount' => 0,
             ];
         }
 
         return [
-            'unpaidInvoicesCount' => static::getUnpaidInvoicesCount((int) $user->counterparty_id),
+            'unpaidInvoicesCount' => static::getUnpaidInvoicesCount($user),
         ];
     }
 
-    protected static function getUnpaidInvoicesCount(int $counterpartyId): int
+    protected static function getUnpaidInvoicesCount(CounterpartyUser $counterpartyUser): int
     {
-        return Invoice::query()
-            ->where('counterparty_id', $counterpartyId)
-            ->where(function (Builder $query): void {
-                $query
-                    ->whereIn('status', ['issued', 'pending'])
-                    ->orWhereNull('status');
-            })
-            ->count();
-    }
-
-    protected static function canCheckUnpaidInvoices(): bool
-    {
-        try {
-            return SchemaFacade::hasTable('invoices')
-                && SchemaFacade::hasColumn('invoices', 'counterparty_id')
-                && SchemaFacade::hasColumn('invoices', 'status');
-        } catch (Throwable) {
-            return false;
-        }
+        return DashboardMetrics::safeCount(DashboardMetrics::unpaidInvoicesQuery($counterpartyUser));
     }
 }
-

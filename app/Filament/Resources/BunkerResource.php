@@ -387,15 +387,7 @@ class BunkerResource extends Resource
 
         $query->where('counterparty_id', $counterpartyId);
 
-        if (static::hasColumn('district')) {
-            $districts = static::districtScopeValues($counterpartyUser);
-
-            if ($districts !== []) {
-                $query->whereIn('district', $districts);
-            }
-        }
-
-        return $query;
+        return DashboardMetrics::applyDistrictScopeToBunkersQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool
@@ -540,28 +532,6 @@ class BunkerResource extends Resource
 
         $query->where('counterparty_id', $counterpartyId);
 
-        if (static::hasColumn('district')) {
-            $districts = static::districtScopeValues($counterpartyUser);
-
-            if ($districts !== []) {
-                $query->whereIn('district', $districts);
-            }
-        }
-
-        return $query;
-    }
-
-    protected static function districtScopeValues(CounterpartyUser $counterpartyUser): array
-    {
-        $scope = trim((string) $counterpartyUser->district_scope);
-
-        if ($scope === '') {
-            return [];
-        }
-
-        return array_values(array_unique(array_filter(
-            array_map('trim', preg_split('/[;,\n]+/u', $scope) ?: []),
-            fn (string $district): bool => $district !== '',
-        )));
+        return DashboardMetrics::applyDistrictScopeToBunkersQuery($query, $counterpartyUser);
     }
 }

@@ -35,5 +35,9 @@ class Work extends Model
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
-}
 
+    public function bunker(): BelongsTo
+    {
+        return $this->belongsTo(Bunker::class, 'bunker_id');
+    }
+}

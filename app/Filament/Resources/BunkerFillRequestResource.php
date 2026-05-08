@@ -178,7 +178,9 @@ class BunkerFillRequestResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('counterparty_id', $counterpartyId);
+        $query->where('counterparty_id', $counterpartyId);
+
+        return DashboardMetrics::applyDistrictScopeToFillRequestsQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool

@@ -119,15 +119,7 @@ final class DashboardMetrics
 
         $query->where('counterparty_id', $counterpartyId);
 
-        if (self::hasColumn('bunkers', 'district')) {
-            $districts = self::districtScopeValues($counterpartyUser);
-
-            if ($districts !== []) {
-                $query->whereIn('district', $districts);
-            }
-        }
-
-        return $query;
+        return self::applyDistrictScopeToBunkersQuery($query, $counterpartyUser);
     }
 
     public static function fillRequestsQuery(?CounterpartyUser $counterpartyUser = null): ?Builder
@@ -149,9 +141,13 @@ final class DashboardMetrics
 
         $counterpartyId = (int) $counterpartyUser->counterparty_id;
 
-        return $counterpartyId > 0
-            ? $query->where('counterparty_id', $counterpartyId)
-            : $query->whereRaw('1 = 0');
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('counterparty_id', $counterpartyId);
+
+        return self::applyDistrictScopeToFillRequestsQuery($query, $counterpartyUser);
     }
 
     public static function invoicesQuery(?CounterpartyUser $counterpartyUser = null): ?Builder
@@ -173,9 +169,13 @@ final class DashboardMetrics
 
         $counterpartyId = (int) $counterpartyUser->counterparty_id;
 
-        return $counterpartyId > 0
-            ? $query->where('counterparty_id', $counterpartyId)
-            : $query->whereRaw('1 = 0');
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('counterparty_id', $counterpartyId);
+
+        return self::applyDistrictScopeToInvoicesQuery($query, $counterpartyUser);
     }
 
     public static function worksQuery(?CounterpartyUser $counterpartyUser = null): ?Builder
@@ -207,7 +207,7 @@ final class DashboardMetrics
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $counterpartyNames): void {
+        $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $counterpartyNames): void {
             if ($hasInvoiceScope) {
                 $scopeQuery->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('counterparty_id', $counterpartyId));
             }
@@ -228,6 +228,85 @@ final class DashboardMetrics
                 }
             }
         });
+
+        return self::applyDistrictScopeToWorksQuery($query, $counterpartyUser);
+    }
+
+    public static function applyDistrictScopeToBunkersQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
+    {
+        return self::applyDirectDistrictScope($query, 'bunkers', $counterpartyUser);
+    }
+
+    public static function applyDistrictScopeToFillRequestsQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
+    {
+        return self::applyDirectDistrictScope($query, 'bunker_fill_requests', $counterpartyUser);
+    }
+
+    public static function applyDistrictScopeToInvoicesQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
+    {
+        $districts = self::districtScopeValues($counterpartyUser);
+
+        if ($districts === []) {
+            return $query;
+        }
+
+        if (self::hasColumn('invoices', 'district')) {
+            return $query->whereIn('invoices.district', $districts);
+        }
+
+        if (self::hasColumns('works', ['invoice_id', 'district'])) {
+            return $query->whereHas('works', fn (Builder $worksQuery): Builder => $worksQuery->whereIn('works.district', $districts));
+        }
+
+        if (
+            self::hasColumns('works', ['invoice_id', 'bunker_id'])
+            && self::hasColumn('bunkers', 'district')
+        ) {
+            return $query->whereHas(
+                'works',
+                fn (Builder $worksQuery): Builder => $worksQuery->whereHas(
+                    'bunker',
+                    fn (Builder $bunkerQuery): Builder => $bunkerQuery->whereIn('bunkers.district', $districts),
+                ),
+            );
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    public static function applyDistrictScopeToWorksQuery(Builder $query, CounterpartyUser $counterpartyUser): Builder
+    {
+        $districts = self::districtScopeValues($counterpartyUser);
+
+        if ($districts === []) {
+            return $query;
+        }
+
+        if (self::hasColumn('works', 'district')) {
+            return $query->whereIn('works.district', $districts);
+        }
+
+        if (
+            self::hasColumn('works', 'bunker_id')
+            && self::hasColumn('bunkers', 'district')
+        ) {
+            return $query->whereHas(
+                'bunker',
+                fn (Builder $bunkerQuery): Builder => $bunkerQuery->whereIn('bunkers.district', $districts),
+            );
+        }
+
+        if (
+            self::hasColumn('works', 'invoice_id')
+            && self::hasColumn('invoices', 'district')
+        ) {
+            return $query->whereHas(
+                'invoice',
+                fn (Builder $invoiceQuery): Builder => $invoiceQuery->whereIn('invoices.district', $districts),
+            );
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     public static function safeCount(?Builder $query): int
@@ -477,6 +556,21 @@ final class DashboardMetrics
             array_map('trim', preg_split('/[;,\n]+/u', $scope) ?: []),
             fn (string $district): bool => $district !== '',
         )));
+    }
+
+    private static function applyDirectDistrictScope(Builder $query, string $table, CounterpartyUser $counterpartyUser): Builder
+    {
+        $districts = self::districtScopeValues($counterpartyUser);
+
+        if ($districts === []) {
+            return $query;
+        }
+
+        if (! self::hasColumn($table, 'district')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn("{$table}.district", $districts);
     }
 
     /**

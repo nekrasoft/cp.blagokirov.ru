@@ -2,19 +2,20 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\WorkResource\Pages\CreateWork;
 use App\Filament\Resources\WorkResource\Pages\EditWork;
 use App\Filament\Resources\WorkResource\Pages\ListWorks;
-use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
-use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\CounterpartyUser;
 use App\Models\Work;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -185,7 +186,7 @@ class WorkResource extends Resource
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
                 ->label('Сумма')
-                ->formatStateUsing(fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ') . ' ₽')
+                ->formatStateUsing(fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ').' ₽')
                 ->sortable();
         }
 
@@ -342,7 +343,7 @@ class WorkResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $hasInvoiceColumn, $counterpartyNames): void {
+        $query->where(function (Builder $scopeQuery) use ($hasInvoiceScope, $hasNameScope, $counterpartyId, $hasInvoiceColumn, $counterpartyNames): void {
             if ($hasInvoiceScope) {
                 $scopeQuery->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('counterparty_id', $counterpartyId));
             }
@@ -363,6 +364,8 @@ class WorkResource extends Resource
                 }
             }
         });
+
+        return DashboardMetrics::applyDistrictScopeToWorksQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool
@@ -480,5 +483,4 @@ class WorkResource extends Resource
             'search' => $counterpartyName,
         ]);
     }
-
 }
