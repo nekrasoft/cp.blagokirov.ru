@@ -330,8 +330,13 @@ class BunkerResource extends Resource
             ];
         }
 
+        $defaultSortColumn = static::hasColumn('fill_level')
+            ? 'fill_level'
+            : (static::hasColumn('number') ? 'number' : 'id');
+
         return $table
-            ->defaultSort(static::hasColumn('number') ? 'number' : 'id')
+            ->defaultSort($defaultSortColumn, static::hasColumn('fill_level') ? 'desc' : 'asc')
+            ->defaultPaginationPageOption(25)
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
