@@ -877,7 +877,7 @@ final class DashboardMetrics
     {
         $categoryName = mb_strtolower($categoryName);
 
-        if (str_contains($categoryName, 'ломовоз')) {
+        if (str_contains($categoryName, 'ломовоз') || str_contains($categoryName, 'вывоз мусора')) {
             return $quantity * 30;
         }
 

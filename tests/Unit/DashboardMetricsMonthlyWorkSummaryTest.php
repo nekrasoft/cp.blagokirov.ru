@@ -55,6 +55,7 @@ class DashboardMetricsMonthlyWorkSummaryTest extends TestCase
             ['id' => 2, 'counterparty_id' => 10, 'paid_amount' => 300, 'paid_at' => '2026-04-11 12:00:00'],
             ['id' => 3, 'counterparty_id' => 10, 'paid_amount' => 999, 'paid_at' => '2026-05-01 12:00:00'],
             ['id' => 4, 'counterparty_id' => 20, 'paid_amount' => 500, 'paid_at' => '2026-04-12 12:00:00'],
+            ['id' => 5, 'counterparty_id' => 10, 'paid_amount' => 150, 'paid_at' => '2026-05-02 12:00:00'],
         ]);
 
         DB::table('works')->insert([
@@ -63,12 +64,14 @@ class DashboardMetricsMonthlyWorkSummaryTest extends TestCase
             ['id' => 3, 'date' => '2026-03-20', 'structure' => 'Контейнер', 'operation' => null, 'object_count' => '7', 'revenue' => 700, 'invoice_id' => 2],
             ['id' => 4, 'date' => '2026-04-05', 'structure' => 'Контейнер', 'operation' => null, 'object_count' => '1', 'revenue' => 100, 'invoice_id' => 3],
             ['id' => 5, 'date' => '2026-04-06', 'structure' => 'Контейнер', 'operation' => null, 'object_count' => '100', 'revenue' => 10000, 'invoice_id' => 4],
+            ['id' => 6, 'date' => '2026-04-07', 'structure' => 'ФЛ - Вывоз мусора', 'operation' => null, 'object_count' => '3', 'revenue' => 150, 'invoice_id' => 5],
         ]);
 
         $summary = DashboardMetrics::monthlyWorkSummary('2026-04', $this->counterpartyUser());
 
         $container = $this->rowByName($summary['rows'], 'Контейнер');
         $truck = $this->rowByName($summary['rows'], 'Ломовоз (ходка)');
+        $wasteRemoval = $this->rowByName($summary['rows'], 'ФЛ - Вывоз мусора');
 
         $this->assertSame(11.5, $container['quantity']);
         $this->assertSame(92.0, $container['volume']);
@@ -80,9 +83,14 @@ class DashboardMetricsMonthlyWorkSummaryTest extends TestCase
         $this->assertSame(300.0, $truck['revenue']);
         $this->assertSame(300.0, $truck['received']);
 
-        $this->assertSame(13.5, $summary['totals']['quantity']);
-        $this->assertSame(152.0, $summary['totals']['volume']);
-        $this->assertSame(1300.0, $summary['totals']['revenue']);
+        $this->assertSame(3.0, $wasteRemoval['quantity']);
+        $this->assertSame(90.0, $wasteRemoval['volume']);
+        $this->assertSame(150.0, $wasteRemoval['revenue']);
+        $this->assertSame(0.0, $wasteRemoval['received']);
+
+        $this->assertSame(16.5, $summary['totals']['quantity']);
+        $this->assertSame(242.0, $summary['totals']['volume']);
+        $this->assertSame(1450.0, $summary['totals']['revenue']);
         $this->assertSame(1500.0, $summary['totals']['received']);
     }
 
