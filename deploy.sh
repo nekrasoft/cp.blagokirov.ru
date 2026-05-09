@@ -7,6 +7,8 @@ Usage: ./deploy.sh [options]
 
 Options:
   --no-migrate      Skip "php artisan migrate --force"
+  --skip-asset-check
+                    Skip built asset freshness check
   --php BIN         PHP binary to use (default: php8.2)
   --help            Show this help
 
@@ -14,6 +16,7 @@ Environment variables:
   LARAVEL_DIR       Laravel app directory (default: script directory)
   PUBLIC_HTML_DIR   Public document root (default: ../public_html from LARAVEL_DIR)
   COMPOSER_BIN      Composer binary/path (default: ~/composer2.phar, fallback: composer)
+  SKIP_ASSET_CHECK  Set to 1 to skip built asset freshness check
 EOF
 }
 
@@ -30,18 +33,58 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1 || fail "Command not found: $1"
 }
 
+check_built_assets_current() {
+    local manifest="$1"
+    shift
+
+    local stale_file
+    local has_stale_files=0
+    local path
+
+    for path in "$@"; do
+        [[ -e "$path" ]] || continue
+
+        while IFS= read -r stale_file; do
+            [[ -n "$stale_file" ]] || continue
+
+            if [[ "$has_stale_files" -eq 0 ]]; then
+                log "Built assets are older than frontend/theme sources:"
+            fi
+
+            has_stale_files=1
+            printf '  - %s\n' "${stale_file#$LARAVEL_DIR/}" >&2
+        done < <(find "$path" -type f -newer "$manifest" \
+            ! -path '*/storage/framework/views/*' \
+            ! -path '*/public/build/*' \
+            | sort | sed -n '1,30p')
+    done
+
+    if [[ "$has_stale_files" -eq 1 ]]; then
+        fail "Run npm run build locally, commit/deploy updated public/build assets, then rerun deploy. Use --skip-asset-check only for emergency PHP-only deploys."
+    fi
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LARAVEL_DIR="${LARAVEL_DIR:-$SCRIPT_DIR}"
 PUBLIC_HTML_DIR="${PUBLIC_HTML_DIR:-$(cd "$LARAVEL_DIR/.." && pwd)/public_html}"
 PHP_BIN="${PHP_BIN:-php8.2}"
 RUN_MIGRATIONS=1
+RUN_ASSET_CHECK=1
 BUILD_MANIFEST_RELATIVE_PATH="public/build/manifest.json"
 TAILADMIN_THEME_ENTRY="resources/css/filament/tailadmin/theme.css"
+
+if [[ "${SKIP_ASSET_CHECK:-0}" == "1" ]]; then
+    RUN_ASSET_CHECK=0
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --no-migrate)
             RUN_MIGRATIONS=0
+            shift
+            ;;
+        --skip-asset-check)
+            RUN_ASSET_CHECK=0
             shift
             ;;
         --php)
@@ -86,6 +129,19 @@ fi
 
 if ! grep -q "$TAILADMIN_THEME_ENTRY" "$BUILD_MANIFEST"; then
     fail "TailAdmin Filament theme is missing from $BUILD_MANIFEST_RELATIVE_PATH. Run npm run build locally."
+fi
+
+if [[ "$RUN_ASSET_CHECK" -eq 1 ]]; then
+    check_built_assets_current "$BUILD_MANIFEST" \
+        "$LARAVEL_DIR/app/Filament" \
+        "$LARAVEL_DIR/resources/css" \
+        "$LARAVEL_DIR/resources/js" \
+        "$LARAVEL_DIR/resources/views" \
+        "$LARAVEL_DIR/package.json" \
+        "$LARAVEL_DIR/package-lock.json" \
+        "$LARAVEL_DIR/vite.config.js"
+else
+    log "Skipping built asset freshness check"
 fi
 
 if [[ -n "${COMPOSER_BIN:-}" ]]; then
