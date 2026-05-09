@@ -56,6 +56,10 @@
             color: #344054;
         }
 
+        .blago-work-summary__table th.blago-work-summary__number {
+            text-align: right;
+        }
+
         .blago-work-summary__table tfoot td {
             background: #f2f4f7;
             border-top: 1px solid #d0d5dd;
