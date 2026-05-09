@@ -1,19 +1,9 @@
 <x-filament-widgets::widget>
-    @once
-        <style>
-            .blago-work-summary-toolbar {
-                display: flex;
-                justify-content: flex-end;
-                margin-bottom: 16px;
-            }
-        </style>
-    @endonce
-
     <x-filament::section
         :heading="'Итоги за ' . $summary['month_label']"
         description="Выручка и фактические поступления по категориям работ."
     >
-        <div class="blago-work-summary-toolbar">
+        <x-slot name="afterHeader">
             <x-filament::button
                 tag="a"
                 :href="$reportUrl"
@@ -23,7 +13,7 @@
             >
                 История
             </x-filament::button>
-        </div>
+        </x-slot>
 
         @include('filament.dashboard.partials.monthly-work-summary-table', ['summary' => $summary])
     </x-filament::section>
