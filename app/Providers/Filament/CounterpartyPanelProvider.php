@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
 use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
+use App\Filament\Pages\MonthlyWorkSummaryPage;
 use App\Filament\Support\TailAdminTheme;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
@@ -40,7 +41,7 @@ class CounterpartyPanelProvider extends PanelProvider
                     return 'Биллинг';
                 }
 
-                $brandName = 'Биллинг — ' . $counterpartyName;
+                $brandName = 'Биллинг — '.$counterpartyName;
 
                 return $brandName;
             })
@@ -48,6 +49,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
             ->pages([
                 CounterpartyDashboard::class,
+                MonthlyWorkSummaryPage::class,
             ])
             ->navigationItems([
                 NavigationItem::make('Карта бункеров ↗')

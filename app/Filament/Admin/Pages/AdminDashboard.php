@@ -6,6 +6,7 @@ use App\Filament\Dashboard\Widgets\AdminOverviewStats;
 use App\Filament\Dashboard\Widgets\AttentionBunkersTable;
 use App\Filament\Dashboard\Widgets\BunkerFillLevelChart;
 use App\Filament\Dashboard\Widgets\FillRequestsTrendChart;
+use App\Filament\Dashboard\Widgets\MonthlyWorkSummaryWidget;
 use App\Filament\Dashboard\Widgets\RecentFillRequestsTable;
 use App\Filament\Dashboard\Widgets\RevenueByMonthChart;
 use App\Filament\Dashboard\Widgets\UnpaidInvoicesTable;
@@ -83,6 +84,7 @@ class AdminDashboard extends Dashboard
     {
         return [
             AdminOverviewStats::class,
+            MonthlyWorkSummaryWidget::class,
             FillRequestsTrendChart::class,
             BunkerFillLevelChart::class,
             RevenueByMonthChart::class,

@@ -8,6 +8,7 @@ use App\Filament\Dashboard\Widgets\CounterpartyOverviewStats;
 use App\Filament\Dashboard\Widgets\CounterpartyRecentWorksTable;
 use App\Filament\Dashboard\Widgets\CounterpartyUnpaidInvoicesTable;
 use App\Filament\Dashboard\Widgets\FillRequestsTrendChart;
+use App\Filament\Dashboard\Widgets\MonthlyWorkSummaryWidget;
 use App\Filament\Dashboard\Widgets\RevenueByMonthChart;
 use App\Filament\Resources\BunkerFillRequestResource;
 use App\Filament\Resources\BunkerResource;
@@ -75,6 +76,7 @@ class CounterpartyDashboard extends Dashboard
         return [
             UnpaidInvoicesWarning::class,
             CounterpartyOverviewStats::class,
+            MonthlyWorkSummaryWidget::class,
             FillRequestsTrendChart::class,
             BunkerFillLevelChart::class,
             RevenueByMonthChart::class,

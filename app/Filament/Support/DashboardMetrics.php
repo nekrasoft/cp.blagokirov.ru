@@ -8,6 +8,7 @@ use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use App\Models\Work;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
@@ -29,6 +30,21 @@ final class DashboardMetrics
         'info',
         'warning',
         'danger',
+    ];
+
+    private const MONTH_NAMES = [
+        1 => 'январь',
+        2 => 'февраль',
+        3 => 'март',
+        4 => 'апрель',
+        5 => 'май',
+        6 => 'июнь',
+        7 => 'июль',
+        8 => 'август',
+        9 => 'сентябрь',
+        10 => 'октябрь',
+        11 => 'ноябрь',
+        12 => 'декабрь',
     ];
 
     /** @var array<string, bool> */
@@ -392,6 +408,135 @@ final class DashboardMetrics
         return ['labels' => $labels, 'data' => array_values($buckets)];
     }
 
+    public static function canBuildMonthlyWorkSummary(): bool
+    {
+        return self::hasTable('works')
+            && self::hasColumn('works', 'date')
+            && (self::hasColumn('works', 'structure') || self::hasColumn('works', 'operation'));
+    }
+
+    /**
+     * @return array{
+     *     month: CarbonImmutable,
+     *     month_key: string,
+     *     month_label: string,
+     *     month_label_upper: string,
+     *     rows: array<int, array{
+     *         key: string,
+     *         name: string,
+     *         quantity: float,
+     *         volume: float,
+     *         revenue: float,
+     *         received: float,
+     *         quantity_formatted: string,
+     *         volume_formatted: string,
+     *         revenue_formatted: string,
+     *         received_formatted: string
+     *     }>,
+     *     totals: array{
+     *         name: string,
+     *         quantity: float,
+     *         volume: float,
+     *         revenue: float,
+     *         received: float,
+     *         quantity_formatted: string,
+     *         volume_formatted: string,
+     *         revenue_formatted: string,
+     *         received_formatted: string
+     *     },
+     *     has_data: bool
+     * }
+     */
+    public static function monthlyWorkSummary(CarbonInterface|string|null $month = null, ?CounterpartyUser $counterpartyUser = null): array
+    {
+        $month = self::monthlyWorkSummaryMonth($month);
+        $start = $month->startOfMonth();
+        $end = $month->endOfMonth();
+        $rows = [];
+
+        if (self::canBuildMonthlyWorkSummary()) {
+            self::addMonthlySummaryWorks($rows, $start, $end, $counterpartyUser);
+            self::addMonthlySummaryReceipts($rows, $start, $end, $counterpartyUser);
+        }
+
+        uasort($rows, self::sortMonthlySummaryRows(...));
+
+        $rows = array_values(array_map(self::formatMonthlySummaryRow(...), $rows));
+        $totals = self::formatMonthlySummaryRow([
+            'key' => 'total',
+            'name' => 'ИТОГО ЗА '.self::monthName($month, uppercase: true),
+            'quantity' => array_sum(array_column($rows, 'quantity')),
+            'volume' => array_sum(array_column($rows, 'volume')),
+            'revenue' => array_sum(array_column($rows, 'revenue')),
+            'received' => array_sum(array_column($rows, 'received')),
+        ]);
+
+        return [
+            'month' => $month,
+            'month_key' => $month->format('Y-m'),
+            'month_label' => self::monthName($month).' '.$month->format('Y'),
+            'month_label_upper' => self::monthName($month, uppercase: true),
+            'rows' => $rows,
+            'totals' => $totals,
+            'has_data' => $rows !== [],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function monthlyWorkSummaryMonthOptions(int $fallbackMonths = 24, ?CounterpartyUser $counterpartyUser = null): array
+    {
+        $current = CarbonImmutable::now()->startOfMonth();
+        $oldest = $current->subMonths($fallbackMonths - 1);
+        $firstDataMonth = self::firstMonthlyWorkSummaryMonth($counterpartyUser);
+        $options = [];
+
+        if ($firstDataMonth && $firstDataMonth->lessThan($oldest)) {
+            $oldest = $firstDataMonth;
+        }
+
+        for ($month = $current; $month->greaterThanOrEqualTo($oldest); $month = $month->subMonth()) {
+            $options[$month->format('Y-m')] = self::monthName($month).' '.$month->format('Y');
+        }
+
+        return $options;
+    }
+
+    public static function monthlyWorkSummaryMonth(CarbonInterface|string|null $month = null): CarbonImmutable
+    {
+        if ($month instanceof CarbonInterface) {
+            return CarbonImmutable::instance($month)->startOfMonth();
+        }
+
+        $month = trim((string) $month);
+
+        if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) === 1) {
+            return CarbonImmutable::createFromFormat('Y-m-d', "{$month}-01")->startOfMonth();
+        }
+
+        try {
+            return CarbonImmutable::parse($month !== '' ? $month : 'now')->startOfMonth();
+        } catch (Throwable) {
+            return CarbonImmutable::now()->startOfMonth();
+        }
+    }
+
+    public static function formatSummaryQuantity(int|float $value): string
+    {
+        return self::formatSummaryDecimal($value, 1);
+    }
+
+    public static function formatSummaryVolume(int|float $value): string
+    {
+        return self::formatSummaryDecimal($value, 1);
+    }
+
+    public static function formatSummaryMoney(int|float $value): string
+    {
+        return number_format((float) $value, 2, ',', ' ');
+    }
+
     /**
      * @return array{labels: array<int, string>, data: array<int, int>}
      */
@@ -517,6 +662,302 @@ final class DashboardMetrics
         }
 
         return self::applyStringContainsScope($query, "{$table}.district", $districts);
+    }
+
+    private static function firstMonthlyWorkSummaryMonth(?CounterpartyUser $counterpartyUser): ?CarbonImmutable
+    {
+        $dates = [];
+
+        if (self::hasColumn('works', 'date')) {
+            $query = self::worksQuery($counterpartyUser);
+
+            try {
+                $date = $query?->min('date');
+
+                if ($date) {
+                    $dates[] = CarbonImmutable::parse($date);
+                }
+            } catch (Throwable) {
+                //
+            }
+        }
+
+        if (self::hasColumn('invoices', 'paid_at')) {
+            $query = self::invoicesQuery($counterpartyUser);
+
+            try {
+                $date = $query?->min('paid_at');
+
+                if ($date) {
+                    $dates[] = CarbonImmutable::parse($date);
+                }
+            } catch (Throwable) {
+                //
+            }
+        }
+
+        if ($dates === []) {
+            return null;
+        }
+
+        usort($dates, fn (CarbonImmutable $left, CarbonImmutable $right): int => $left->getTimestamp() <=> $right->getTimestamp());
+
+        return $dates[0]->startOfMonth();
+    }
+
+    /**
+     * @param  array<string, array{key: string, name: string, quantity: float, volume: float, revenue: float, received: float}>  $rows
+     */
+    private static function addMonthlySummaryWorks(array &$rows, CarbonImmutable $start, CarbonImmutable $end, ?CounterpartyUser $counterpartyUser): void
+    {
+        if (! self::hasColumn('works', 'date')) {
+            return;
+        }
+
+        $query = self::worksQuery($counterpartyUser);
+
+        if (! $query) {
+            return;
+        }
+
+        try {
+            $query
+                ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+                ->get(self::monthlySummaryWorkColumns())
+                ->each(function (Work $work) use (&$rows): void {
+                    $name = self::monthlySummaryCategoryName($work);
+                    $key = self::monthlySummaryCategoryKey($name);
+                    $quantity = self::parseSummaryNumber($work->object_count ?? null);
+
+                    self::ensureMonthlySummaryRow($rows, $key, $name);
+
+                    $rows[$key]['quantity'] += $quantity;
+                    $rows[$key]['volume'] += self::monthlySummaryVolume($name, $quantity);
+                    $rows[$key]['revenue'] += (float) ($work->revenue ?? 0);
+                });
+        } catch (Throwable) {
+            //
+        }
+    }
+
+    /**
+     * @param  array<string, array{key: string, name: string, quantity: float, volume: float, revenue: float, received: float}>  $rows
+     */
+    private static function addMonthlySummaryReceipts(array &$rows, CarbonImmutable $start, CarbonImmutable $end, ?CounterpartyUser $counterpartyUser): void
+    {
+        if (! self::hasColumns('works', ['invoice_id', 'revenue'])
+            || ! self::hasColumns('invoices', ['paid_amount', 'paid_at'])) {
+            return;
+        }
+
+        $query = self::worksQuery($counterpartyUser);
+
+        if (! $query) {
+            return;
+        }
+
+        try {
+            $query
+                ->whereNotNull('invoice_id')
+                ->whereHas('invoice', function (Builder $invoiceQuery) use ($start, $end): void {
+                    $invoiceQuery
+                        ->whereBetween('paid_at', [$start->startOfDay()->toDateTimeString(), $end->endOfDay()->toDateTimeString()])
+                        ->where('paid_amount', '>', 0);
+                })
+                ->with(['invoice' => fn ($invoiceQuery) => $invoiceQuery->select(['id', 'paid_amount'])])
+                ->get(self::monthlySummaryWorkColumns(includeInvoiceId: true))
+                ->groupBy('invoice_id')
+                ->each(function ($invoiceWorks) use (&$rows): void {
+                    /** @var Work|null $firstWork */
+                    $firstWork = $invoiceWorks->first();
+                    $invoice = $firstWork?->invoice;
+                    $paidAmount = (float) ($invoice?->paid_amount ?? 0);
+
+                    if ($paidAmount <= 0) {
+                        return;
+                    }
+
+                    $weights = [];
+                    $fallbackWeights = [];
+
+                    foreach ($invoiceWorks as $work) {
+                        $name = self::monthlySummaryCategoryName($work);
+                        $key = self::monthlySummaryCategoryKey($name);
+                        $revenue = (float) ($work->revenue ?? 0);
+
+                        self::ensureMonthlySummaryRow($rows, $key, $name);
+
+                        $weights[$key] = ($weights[$key] ?? 0.0) + max(0.0, $revenue);
+                        $fallbackWeights[$key] = ($fallbackWeights[$key] ?? 0.0) + 1.0;
+                    }
+
+                    $totalWeight = array_sum($weights);
+
+                    if ($totalWeight <= 0.0) {
+                        $weights = $fallbackWeights;
+                        $totalWeight = array_sum($weights);
+                    }
+
+                    if ($totalWeight <= 0.0) {
+                        return;
+                    }
+
+                    foreach ($weights as $key => $weight) {
+                        $rows[$key]['received'] += $paidAmount * ($weight / $totalWeight);
+                    }
+                });
+        } catch (Throwable) {
+            //
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function monthlySummaryWorkColumns(bool $includeInvoiceId = false): array
+    {
+        $columns = [];
+
+        foreach (['id', 'date', 'structure', 'operation', 'object_count', 'revenue'] as $column) {
+            if (self::hasColumn('works', $column)) {
+                $columns[] = $column;
+            }
+        }
+
+        if ($includeInvoiceId && self::hasColumn('works', 'invoice_id')) {
+            $columns[] = 'invoice_id';
+        }
+
+        return array_values(array_unique($columns));
+    }
+
+    private static function monthlySummaryCategoryName(Work $work): string
+    {
+        $structure = trim((string) ($work->structure ?? ''));
+        $operation = trim((string) ($work->operation ?? ''));
+
+        if ($structure !== '') {
+            if ($operation !== ''
+                && str_contains(mb_strtolower($structure), 'ломовоз')
+                && ! str_contains(mb_strtolower($structure), mb_strtolower($operation))) {
+                return "{$structure} ({$operation})";
+            }
+
+            return $structure;
+        }
+
+        if ($operation !== '') {
+            return $operation;
+        }
+
+        return 'Без категории';
+    }
+
+    private static function monthlySummaryCategoryKey(string $name): string
+    {
+        return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $name) ?? $name));
+    }
+
+    /**
+     * @param  array<string, array{key: string, name: string, quantity: float, volume: float, revenue: float, received: float}>  $rows
+     */
+    private static function ensureMonthlySummaryRow(array &$rows, string $key, string $name): void
+    {
+        $rows[$key] ??= [
+            'key' => $key,
+            'name' => $name,
+            'quantity' => 0.0,
+            'volume' => 0.0,
+            'revenue' => 0.0,
+            'received' => 0.0,
+        ];
+    }
+
+    private static function monthlySummaryVolume(string $categoryName, float $quantity): float
+    {
+        $categoryName = mb_strtolower($categoryName);
+
+        if (str_contains($categoryName, 'ломовоз')) {
+            return $quantity * 30;
+        }
+
+        if (str_contains($categoryName, 'контейнер')) {
+            return $quantity * 8;
+        }
+
+        return 0.0;
+    }
+
+    private static function parseSummaryNumber(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $value = str_replace(["\xc2\xa0", ' '], '', (string) $value);
+        $value = str_replace(',', '.', $value);
+
+        if (preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
+            return 0.0;
+        }
+
+        return (float) $matches[0];
+    }
+
+    /**
+     * @param  array{key: string, name: string, quantity: float, volume: float, revenue: float, received: float}  $row
+     * @return array{key: string, name: string, quantity: float, volume: float, revenue: float, received: float, quantity_formatted: string, volume_formatted: string, revenue_formatted: string, received_formatted: string}
+     */
+    private static function formatMonthlySummaryRow(array $row): array
+    {
+        return [
+            ...$row,
+            'quantity_formatted' => self::formatSummaryQuantity($row['quantity']),
+            'volume_formatted' => self::formatSummaryVolume($row['volume']),
+            'revenue_formatted' => self::formatSummaryMoney($row['revenue']),
+            'received_formatted' => self::formatSummaryMoney($row['received']),
+        ];
+    }
+
+    private static function sortMonthlySummaryRows(array $left, array $right): int
+    {
+        $leftPriority = self::monthlySummaryCategoryPriority($left['name']);
+        $rightPriority = self::monthlySummaryCategoryPriority($right['name']);
+
+        if ($leftPriority !== $rightPriority) {
+            return $leftPriority <=> $rightPriority;
+        }
+
+        return strnatcasecmp($left['name'], $right['name']);
+    }
+
+    private static function monthlySummaryCategoryPriority(string $name): int
+    {
+        $name = mb_strtolower($name);
+
+        return match (true) {
+            str_contains($name, 'контейнер') => 10,
+            str_contains($name, 'ломовоз') => 20,
+            default => 100,
+        };
+    }
+
+    private static function formatSummaryDecimal(int|float $value, int $decimals): string
+    {
+        $value = round((float) $value, $decimals);
+
+        if (abs($value - round($value)) < 0.00001) {
+            return number_format($value, 0, ',', ' ');
+        }
+
+        return number_format($value, $decimals, ',', ' ');
+    }
+
+    private static function monthName(CarbonImmutable $month, bool $uppercase = false): string
+    {
+        $name = self::MONTH_NAMES[(int) $month->format('n')] ?? $month->format('m');
+
+        return $uppercase ? mb_strtoupper($name) : mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
     }
 
     /**
