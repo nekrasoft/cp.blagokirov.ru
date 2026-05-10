@@ -35,10 +35,6 @@ final class TailAdminTheme
                 PanelsRenderHook::SCRIPTS_AFTER,
                 fn () => view('filament.tailadmin.navigation-search-sync'),
             )
-            ->renderHook(
-                PanelsRenderHook::BODY_END,
-                fn () => view('filament.debug.demo-database-panel'),
-            )
             ->colors([
                 'primary' => self::BRAND,
                 'gray' => Color::Gray,
