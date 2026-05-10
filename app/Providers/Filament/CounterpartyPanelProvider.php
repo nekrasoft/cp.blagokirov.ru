@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Auth\CounterpartyLogin;
 use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
 use App\Filament\Support\TailAdminTheme;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -68,6 +69,7 @@ class CounterpartyPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                UseCounterpartyDemoDatabase::class,
             ]);
     }
 }

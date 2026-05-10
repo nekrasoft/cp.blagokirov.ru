@@ -86,6 +86,11 @@ class CounterpartyUserResource extends Resource
                     ->label('Активен')
                     ->default(true)
                     ->required(),
+                Toggle::make('is_demo')
+                    ->label('Демо-режим')
+                    ->helperText('Для этого пользователя данные клиентского кабинета будут читаться из демо-БД.')
+                    ->default(false)
+                    ->required(),
             ]);
     }
 
@@ -131,6 +136,10 @@ class CounterpartyUserResource extends Resource
                     ->label('Активен')
                     ->boolean()
                     ->sortable(),
+                IconColumn::make('is_demo')
+                    ->label('Демо')
+                    ->boolean()
+                    ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
                     ->dateTime('d.m.Y H:i')
@@ -140,6 +149,9 @@ class CounterpartyUserResource extends Resource
             ->filters([
                 TernaryFilter::make('is_active')
                     ->label('Активность')
+                    ->boolean(),
+                TernaryFilter::make('is_demo')
+                    ->label('Демо-режим')
                     ->boolean(),
                 TernaryFilter::make('district_scope')
                     ->label('Районный фильтр')
