@@ -33,35 +33,55 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1 || fail "Command not found: $1"
 }
 
-check_built_assets_current() {
-    local manifest="$1"
-    shift
+build_source_files() {
+    (
+        cd "$LARAVEL_DIR"
 
-    local stale_file
-    local has_stale_files=0
-    local path
-
-    for path in "$@"; do
-        [[ -e "$path" ]] || continue
-
-        while IFS= read -r stale_file; do
-            [[ -n "$stale_file" ]] || continue
-
-            if [[ "$has_stale_files" -eq 0 ]]; then
-                log "Built assets are older than frontend/theme sources:"
-            fi
-
-            has_stale_files=1
-            printf '  - %s\n' "${stale_file#$LARAVEL_DIR/}" >&2
-        done < <(find "$path" -type f -newer "$manifest" \
+        find app/Filament resources/css resources/js resources/views \
+            -type f \
             ! -path '*/storage/framework/views/*' \
             ! -path '*/public/build/*' \
-            | sort | sed -n '1,30p')
-    done
+            -print 2>/dev/null || true
 
-    if [[ "$has_stale_files" -eq 1 ]]; then
-        fail "Run npm run build locally, commit/deploy updated public/build assets, then rerun deploy. Use --skip-asset-check only for emergency PHP-only deploys."
+        printf '%s\n' package.json package-lock.json vite.config.js
+    ) | sort
+}
+
+calculate_build_source_fingerprint() {
+    local file
+
+    build_source_files | while IFS= read -r file; do
+        [[ -f "$LARAVEL_DIR/$file" ]] || continue
+
+        printf '%s  %s\n' "$(sha256sum "$LARAVEL_DIR/$file" | sed 's/[[:space:]].*$//')" "$file"
+    done | sha256sum | sed 's/[[:space:]].*$//'
+}
+
+read_stored_build_source_fingerprint() {
+    local fingerprint_file="$1"
+
+    sed -n 's/^[[:space:]]*"fingerprint":[[:space:]]*"\([a-f0-9]\{64\}\)",\{0,1\}[[:space:]]*$/\1/p' "$fingerprint_file" | sed -n '1p'
+}
+
+check_built_assets_current() {
+    local fingerprint_file="$1"
+    local stored_fingerprint
+    local current_fingerprint
+
+    if [[ ! -f "$fingerprint_file" ]]; then
+        fail "$(basename "$fingerprint_file") is missing. Run npm run build locally, commit/deploy updated public/build assets, then rerun deploy."
     fi
+
+    stored_fingerprint="$(read_stored_build_source_fingerprint "$fingerprint_file")"
+    [[ -n "$stored_fingerprint" ]] || fail "Could not read build source fingerprint from ${fingerprint_file#$LARAVEL_DIR/}. Run npm run build locally."
+
+    current_fingerprint="$(calculate_build_source_fingerprint)"
+
+    if [[ "$stored_fingerprint" != "$current_fingerprint" ]]; then
+        fail "Built assets fingerprint is stale. Run npm run build locally, commit/deploy updated public/build assets, then rerun deploy. Use --skip-asset-check only for emergency PHP-only deploys."
+    fi
+
+    log "Built assets fingerprint is current"
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -71,6 +91,7 @@ PHP_BIN="${PHP_BIN:-php8.2}"
 RUN_MIGRATIONS=1
 RUN_ASSET_CHECK=1
 BUILD_MANIFEST_RELATIVE_PATH="public/build/manifest.json"
+BUILD_FINGERPRINT_RELATIVE_PATH="public/build/build-fingerprint.json"
 TAILADMIN_THEME_ENTRY="resources/css/filament/tailadmin/theme.css"
 
 if [[ "${SKIP_ASSET_CHECK:-0}" == "1" ]]; then
@@ -108,6 +129,7 @@ require_cmd find
 require_cmd grep
 require_cmd ln
 require_cmd sed
+require_cmd sha256sum
 
 if [[ ! -d "$LARAVEL_DIR" ]]; then
     fail "Laravel directory does not exist: $LARAVEL_DIR"
@@ -122,6 +144,7 @@ if [[ ! -d "$PUBLIC_HTML_DIR" ]]; then
 fi
 
 BUILD_MANIFEST="$LARAVEL_DIR/$BUILD_MANIFEST_RELATIVE_PATH"
+BUILD_FINGERPRINT="$LARAVEL_DIR/$BUILD_FINGERPRINT_RELATIVE_PATH"
 
 if [[ ! -f "$BUILD_MANIFEST" ]]; then
     fail "$BUILD_MANIFEST_RELATIVE_PATH is missing. Run npm run build locally and deploy built assets."
@@ -132,14 +155,7 @@ if ! grep -q "$TAILADMIN_THEME_ENTRY" "$BUILD_MANIFEST"; then
 fi
 
 if [[ "$RUN_ASSET_CHECK" -eq 1 ]]; then
-    check_built_assets_current "$BUILD_MANIFEST" \
-        "$LARAVEL_DIR/app/Filament" \
-        "$LARAVEL_DIR/resources/css" \
-        "$LARAVEL_DIR/resources/js" \
-        "$LARAVEL_DIR/resources/views" \
-        "$LARAVEL_DIR/package.json" \
-        "$LARAVEL_DIR/package-lock.json" \
-        "$LARAVEL_DIR/vite.config.js"
+    check_built_assets_current "$BUILD_FINGERPRINT"
 else
     log "Skipping built asset freshness check"
 fi
