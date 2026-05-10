@@ -1,5 +1,5 @@
 {
-  "algorithm": "sha256:build-source-files:v1",
+  "algorithm": "sha256:build-source-files-normalized:v2",
   "fingerprint": "f4af05bda28a18124e995c989d026c3c11d0e7aeb2d0160144c439388884f0c4",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",

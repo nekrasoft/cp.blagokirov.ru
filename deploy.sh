@@ -37,14 +37,30 @@ build_source_files() {
     (
         cd "$LARAVEL_DIR"
 
+        # Deployment-only files such as deploy.sh are intentionally excluded
+        # because they do not change generated Vite/Tailwind assets.
         find app/Filament resources/css resources/js resources/views \
             -type f \
             ! -path '*/storage/framework/views/*' \
             ! -path '*/public/build/*' \
             -print 2>/dev/null || true
 
-        printf '%s\n' package.json package-lock.json vite.config.js
+        printf '%s\n' package.json vite.config.js
+
+        if [[ -f package-lock.json ]]; then
+            if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+                git ls-files --error-unmatch package-lock.json >/dev/null 2>&1 && printf '%s\n' package-lock.json
+            else
+                printf '%s\n' package-lock.json
+            fi
+        fi
     ) | sort
+}
+
+calculate_normalized_file_hash() {
+    "$PHP_BIN" -r 'echo str_replace(["\r\n", "\r"], "\n", file_get_contents($argv[1]));' "$1" \
+        | sha256sum \
+        | sed 's/[[:space:]].*$//'
 }
 
 calculate_build_source_fingerprint() {
@@ -53,7 +69,7 @@ calculate_build_source_fingerprint() {
     build_source_files | while IFS= read -r file; do
         [[ -f "$LARAVEL_DIR/$file" ]] || continue
 
-        printf '%s  %s\n' "$(sha256sum "$LARAVEL_DIR/$file" | sed 's/[[:space:]].*$//')" "$file"
+        printf '%s  %s\n' "$(calculate_normalized_file_hash "$LARAVEL_DIR/$file")" "$file"
     done | sha256sum | sed 's/[[:space:]].*$//'
 }
 
@@ -78,6 +94,32 @@ check_built_assets_current() {
     current_fingerprint="$(calculate_build_source_fingerprint)"
 
     if [[ "$stored_fingerprint" != "$current_fingerprint" ]]; then
+        log "Stored build fingerprint:  $stored_fingerprint"
+        log "Current build fingerprint: $current_fingerprint"
+
+        if command -v git >/dev/null 2>&1 && git -C "$LARAVEL_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            local git_status
+
+            git_status="$(git -C "$LARAVEL_DIR" status --short -- \
+                app/Filament \
+                resources/css \
+                resources/js \
+                resources/views \
+                package.json \
+                package-lock.json \
+                vite.config.js \
+                public/build/build-fingerprint.json \
+                public/build/manifest.json \
+                | sed -n '1,40p')"
+
+            if [[ -n "$git_status" ]]; then
+                log "Git status for build inputs:"
+                printf '%s\n' "$git_status" | sed 's/^/  /' >&2
+            else
+                log "Git status for build inputs is clean"
+            fi
+        fi
+
         fail "Built assets fingerprint is stale. Run npm run build locally, commit/deploy updated public/build assets, then rerun deploy. Use --skip-asset-check only for emergency PHP-only deploys."
     fi
 
