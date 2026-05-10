@@ -732,7 +732,7 @@ final class DashboardMetrics
                     self::ensureMonthlySummaryRow($rows, $key, $name);
 
                     $rows[$key]['quantity'] += $quantity;
-                    $rows[$key]['volume'] += self::monthlySummaryVolume($name, $quantity);
+                    $rows[$key]['volume'] += self::monthlySummaryWorkVolume($work, $name, $quantity);
                     $rows[$key]['revenue'] += (float) ($work->revenue ?? 0);
                 });
         } catch (Throwable) {
@@ -818,7 +818,7 @@ final class DashboardMetrics
     {
         $columns = [];
 
-        foreach (['id', 'date', 'structure', 'operation', 'object_count', 'revenue'] as $column) {
+        foreach (['id', 'date', 'structure', 'operation', 'object_count', 'volume', 'revenue'] as $column) {
             if (self::hasColumn('works', $column)) {
                 $columns[] = $column;
             }
@@ -888,6 +888,17 @@ final class DashboardMetrics
         return 0.0;
     }
 
+    private static function monthlySummaryWorkVolume(Work $work, string $categoryName, float $quantity): float
+    {
+        $volume = self::parseNullableSummaryNumber($work->getAttribute('volume'));
+
+        if ($volume !== null) {
+            return $volume;
+        }
+
+        return self::monthlySummaryVolume($categoryName, $quantity);
+    }
+
     private static function parseSummaryNumber(mixed $value): float
     {
         if (is_int($value) || is_float($value)) {
@@ -899,6 +910,22 @@ final class DashboardMetrics
 
         if (preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
             return 0.0;
+        }
+
+        return (float) $matches[0];
+    }
+
+    private static function parseNullableSummaryNumber(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $value = str_replace(["\xc2\xa0", ' '], '', (string) $value);
+        $value = str_replace(',', '.', $value);
+
+        if ($value === '' || preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
+            return null;
         }
 
         return (float) $matches[0];

@@ -18,6 +18,7 @@ class Work extends Model
         'structure',
         'operation',
         'object_count',
+        'volume',
         'revenue',
         'sheet_row_hash',
         'invoice_id',
@@ -26,6 +27,7 @@ class Work extends Model
 
     protected $casts = [
         'date' => 'date',
+        'volume' => 'decimal:2',
         'revenue' => 'decimal:2',
         'invoice_id' => 'integer',
         'created_at' => 'datetime',
