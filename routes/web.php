@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\CrossServiceSsoController;
+use App\Http\Controllers\DemoDatabaseDebugController;
 use App\Http\Controllers\GoogleBusinessProfileOAuthController;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,6 +18,10 @@ Route::middleware('auth:counterparty')
         Route::get('/billing/sso/map', [CrossServiceSsoController::class, 'redirectToMap'])
             ->name('billing.sso.map');
     });
+
+Route::middleware(['auth:counterparty', UseCounterpartyDemoDatabase::class])
+    ->get('/billing/demo-debug', DemoDatabaseDebugController::class)
+    ->name('billing.demo-debug');
 
 Route::middleware('auth')
     ->prefix('admin/integrations/google-business-profile/oauth')

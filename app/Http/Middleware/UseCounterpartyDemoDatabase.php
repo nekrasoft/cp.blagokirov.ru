@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Filament\Support\RuntimeSchemaCache;
 use App\Models\CounterpartyUser;
+use App\Support\DemoDatabaseDebug;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,12 @@ class UseCounterpartyDemoDatabase
         RuntimeSchemaCache::flush();
 
         try {
-            return $next($request);
+            $response = $next($request);
+
+            $response->headers->set('X-Demo-Database-Connection', $connection);
+            $response->headers->set('X-Demo-Database-Debug', DemoDatabaseDebug::headerValue($request));
+
+            return $response;
         } finally {
             DB::setDefaultConnection($previousConnection);
             RuntimeSchemaCache::flush();
