@@ -67,13 +67,17 @@ function isGitTracked(path) {
     }
 }
 
+function comparePaths(a, b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
 if (existsSync(join(root, 'package-lock.json')) && isGitTracked('package-lock.json')) {
     sourcePaths.push('package-lock.json');
 }
 
 const files = sourcePaths
     .flatMap((sourcePath) => collectFiles(join(root, sourcePath)))
-    .sort((a, b) => a.localeCompare(b));
+    .sort(comparePaths);
 
 const entries = files.map((file) => {
     const hash = createHash('sha256')

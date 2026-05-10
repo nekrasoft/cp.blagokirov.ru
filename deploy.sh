@@ -54,7 +54,7 @@ build_source_files() {
                 printf '%s\n' package-lock.json
             fi
         fi
-    ) | sort
+    ) | LC_ALL=C sort
 }
 
 calculate_normalized_file_hash() {
