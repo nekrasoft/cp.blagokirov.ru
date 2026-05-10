@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Filament\Support\RuntimeSchemaCache;
 use App\Models\CounterpartyUser;
 use Closure;
 use Illuminate\Http\Request;
@@ -38,11 +39,13 @@ class UseCounterpartyDemoDatabase
 
         $previousConnection = DB::getDefaultConnection();
         DB::setDefaultConnection($connection);
+        RuntimeSchemaCache::flush();
 
         try {
             return $next($request);
         } finally {
             DB::setDefaultConnection($previousConnection);
+            RuntimeSchemaCache::flush();
         }
     }
 }
