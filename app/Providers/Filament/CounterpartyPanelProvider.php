@@ -65,11 +65,11 @@ class CounterpartyPanelProvider extends PanelProvider
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
+                UseCounterpartyDemoDatabase::class,
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
-                UseCounterpartyDemoDatabase::class,
             ]);
     }
 }
