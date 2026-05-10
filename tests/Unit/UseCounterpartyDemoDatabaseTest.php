@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use App\Models\CounterpartyUser;
 use Illuminate\Http\Request;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -25,9 +27,40 @@ class UseCounterpartyDemoDatabaseTest extends TestCase
         DB::setDefaultConnection('sqlite');
 
         $request = Request::create('/billing');
+        $request->setLaravelSession(new Store('test', new ArraySessionHandler(120)));
         $request->setUserResolver(fn (?string $guard = null): ?CounterpartyUser => $guard === 'counterparty'
             ? new CounterpartyUser(['is_demo' => true])
             : null);
+
+        $middleware = new UseCounterpartyDemoDatabase();
+
+        $response = $middleware->handle($request, function (): Response {
+            $this->assertSame('demo', DB::getDefaultConnection());
+
+            return new Response('ok');
+        });
+
+        $this->assertSame('ok', $response->getContent());
+        $this->assertTrue($request->session()->get(UseCounterpartyDemoDatabase::SESSION_KEY));
+        $this->assertSame('sqlite', DB::getDefaultConnection());
+    }
+
+    public function test_it_switches_to_demo_connection_from_session_marker(): void
+    {
+        config()->set('database.default', 'sqlite');
+        config()->set('database.demo_connection', 'demo');
+        config()->set('database.connections.demo', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ]);
+
+        DB::setDefaultConnection('sqlite');
+
+        $request = Request::create('/billing');
+        $request->setLaravelSession(new Store('test', new ArraySessionHandler(120)));
+        $request->session()->put(UseCounterpartyDemoDatabase::SESSION_KEY, true);
 
         $middleware = new UseCounterpartyDemoDatabase();
 
@@ -46,6 +79,7 @@ class UseCounterpartyDemoDatabaseTest extends TestCase
         DB::setDefaultConnection('sqlite');
 
         $request = Request::create('/billing');
+        $request->setLaravelSession(new Store('test', new ArraySessionHandler(120)));
         $request->setUserResolver(fn (?string $guard = null): ?CounterpartyUser => $guard === 'counterparty'
             ? new CounterpartyUser(['is_demo' => false])
             : null);
@@ -59,6 +93,7 @@ class UseCounterpartyDemoDatabaseTest extends TestCase
         });
 
         $this->assertSame('ok', $response->getContent());
+        $this->assertFalse($request->session()->get(UseCounterpartyDemoDatabase::SESSION_KEY));
         $this->assertSame('sqlite', DB::getDefaultConnection());
     }
 }

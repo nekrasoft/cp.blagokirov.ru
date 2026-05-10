@@ -3,6 +3,8 @@
 namespace App\Filament\Auth\Responses;
 
 use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
+use App\Models\CounterpartyUser;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as Responsable;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +19,12 @@ class LoginResponse implements Responsable
         if (! $panel || $panel->getId() !== 'counterparty') {
             return redirect()->intended(Filament::getUrl());
         }
+
+        $user = Filament::auth()->user();
+        session()->put(
+            UseCounterpartyDemoDatabase::SESSION_KEY,
+            $user instanceof CounterpartyUser && $user->is_demo,
+        );
 
         $fallbackUrl = CounterpartyDashboard::getUrl(panel: 'counterparty');
         $intendedUrl = (string) session()->pull('url.intended', '');
