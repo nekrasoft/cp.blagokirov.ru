@@ -19,6 +19,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'demo_connection' => env('DEMO_DB_CONNECTION_NAME', 'demo'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
@@ -61,6 +63,31 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'demo' => [
+            'driver' => env('DEMO_DB_DRIVER', env('DB_CONNECTION', 'sqlite')),
+            'url' => env('DEMO_DB_URL'),
+            'host' => env('DEMO_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DEMO_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('DEMO_DB_DATABASE', database_path('demo.sqlite')),
+            'username' => env('DEMO_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DEMO_DB_PASSWORD', ''),
+            'unix_socket' => env('DEMO_DB_SOCKET', ''),
+            'charset' => env('DEMO_DB_CHARSET', env('DB_CHARSET', 'utf8mb4')),
+            'collation' => env('DEMO_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'foreign_key_constraints' => env('DEMO_DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('DEMO_MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 

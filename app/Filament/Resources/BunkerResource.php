@@ -5,15 +5,17 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\BunkerResource\Pages\CreateBunker;
 use App\Filament\Resources\BunkerResource\Pages\EditBunker;
 use App\Filament\Resources\BunkerResource\Pages\ListBunkers;
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\Bunker;
 use App\Models\CounterpartyUser;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -33,6 +35,7 @@ use UnitEnum;
 
 class BunkerResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = Bunker::class;
@@ -211,18 +214,14 @@ class BunkerResource extends Resource
         if (static::hasColumn('fill_level')) {
             $columns[] = TextColumn::make('fill_level')
                 ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0) . '%')
+                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
                 ->badge()
-                ->color(fn ($state): string => match (true) {
-                    (int) $state >= 100 => 'danger',
-                    (int) $state >= 70 => 'warning',
-                    default => 'success',
-                })
+                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
                 ->sortable();
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
@@ -318,7 +317,7 @@ class BunkerResource extends Resource
         $recordActions = [];
         $toolbarActions = [];
 
-        if (! $isCounterparty) {
+        if (! $isCounterparty && static::hasAdminWriteAccess()) {
             $recordActions = [
                 EditAction::make(),
                 DeleteAction::make(),
@@ -331,12 +330,20 @@ class BunkerResource extends Resource
             ];
         }
 
+        $defaultSortColumn = static::hasColumn('fill_level')
+            ? 'fill_level'
+            : (static::hasColumn('number') ? 'number' : 'id');
+
         return $table
-            ->defaultSort(static::hasColumn('number') ? 'number' : 'id')
+            ->defaultSort($defaultSortColumn, static::hasColumn('fill_level') ? 'desc' : 'asc')
+            ->defaultPaginationPageOption(25)
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-map-pin')
+            ->emptyStateHeading('Бункеров пока нет')
+            ->emptyStateDescription('После загрузки или создания бункеров здесь будут адреса, районы и заполненность.');
     }
 
     public static function getPages(): array
@@ -380,35 +387,35 @@ class BunkerResource extends Resource
 
         $query->where('counterparty_id', $counterpartyId);
 
-        if (static::hasColumn('district')) {
-            $districts = static::districtScopeValues($counterpartyUser);
-
-            if ($districts !== []) {
-                $query->whereIn('district', $districts);
-            }
-        }
-
-        return $query;
+        return DashboardMetrics::applyDistrictScopeToBunkersQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool
@@ -525,28 +532,6 @@ class BunkerResource extends Resource
 
         $query->where('counterparty_id', $counterpartyId);
 
-        if (static::hasColumn('district')) {
-            $districts = static::districtScopeValues($counterpartyUser);
-
-            if ($districts !== []) {
-                $query->whereIn('district', $districts);
-            }
-        }
-
-        return $query;
-    }
-
-    protected static function districtScopeValues(CounterpartyUser $counterpartyUser): array
-    {
-        $scope = trim((string) $counterpartyUser->district_scope);
-
-        if ($scope === '') {
-            return [];
-        }
-
-        return array_values(array_unique(array_filter(
-            array_map('trim', preg_split('/[;,\n]+/u', $scope) ?: []),
-            fn (string $district): bool => $district !== '',
-        )));
+        return DashboardMetrics::applyDistrictScopeToBunkersQuery($query, $counterpartyUser);
     }
 }

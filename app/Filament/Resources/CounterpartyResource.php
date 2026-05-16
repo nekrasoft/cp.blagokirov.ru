@@ -2,17 +2,20 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\CounterpartyResource\Pages\CreateCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\EditCounterparty;
 use App\Filament\Resources\CounterpartyResource\Pages\ListCounterparties;
 use App\Models\Counterparty;
 use App\Models\CounterpartyUser;
+use App\Rules\EmailList;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -20,12 +23,16 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 use UnitEnum;
 
 class CounterpartyResource extends Resource
 {
+    use AuthorizesAdminWrites;
+    use PreservesNavigationSearch;
+
     protected static ?string $model = Counterparty::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
@@ -69,14 +76,14 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('email')) {
             $components[] = TextInput::make('email')
                 ->label('Email')
-                ->rule(static::emailListValidationRule())
+                ->rule(new EmailList)
                 ->maxLength(255);
         }
 
         if (static::hasColumn('email_accountant')) {
             $components[] = TextInput::make('email_accountant')
                 ->label('Email бухгалтера')
-                ->rule(static::emailListValidationRule())
+                ->rule(new EmailList)
                 ->maxLength(255);
         }
 
@@ -149,14 +156,14 @@ class CounterpartyResource extends Resource
             $columns[] = TextColumn::make('inn')
                 ->label('ИНН')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('kpp')) {
             $columns[] = TextColumn::make('kpp')
                 ->label('КПП')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('email')) {
@@ -172,14 +179,14 @@ class CounterpartyResource extends Resource
                 ->label('Email бухгалтера')
                 ->searchable()
                 ->copyable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('phone')) {
             $columns[] = TextColumn::make('phone')
                 ->label('Телефон')
                 ->searchable()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('note')) {
@@ -187,7 +194,7 @@ class CounterpartyResource extends Resource
                 ->label('Примечание')
                 ->searchable()
                 ->limit(40)
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('contract')) {
@@ -201,6 +208,19 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('bitrix_company_id')) {
             $columns[] = TextColumn::make('bitrix_company_id')
                 ->label('Bitrix24 ID')
+                ->color(
+                    fn (Counterparty $record): string => static::buildBitrixCompanyUrl($record->bitrix_company_id) ? 'primary' : 'gray'
+                )
+                ->icon(
+                    fn (Counterparty $record): ?string => static::buildBitrixCompanyUrl($record->bitrix_company_id)
+                        ? 'heroicon-m-arrow-top-right-on-square'
+                        : null
+                )
+                ->iconPosition('after')
+                ->url(
+                    fn (Counterparty $record): ?string => static::buildBitrixCompanyUrl($record->bitrix_company_id),
+                    shouldOpenInNewTab: true,
+                )
                 ->sortable()
                 ->toggleable();
         }
@@ -238,19 +258,28 @@ class CounterpartyResource extends Resource
                 ]);
         }
 
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (static::hasAdminWriteAccess()) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
+        }
+
         return $table
             ->defaultSort('short_name')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
@@ -265,6 +294,34 @@ class CounterpartyResource extends Resource
     public static function canAccess(): bool
     {
         return ! static::isCounterpartyAuthenticated() && parent::canAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasColumn(string $column): bool
@@ -282,36 +339,28 @@ class CounterpartyResource extends Resource
         return static::$hasColumnCache[$column];
     }
 
+    protected static function buildBitrixCompanyUrl(?int $companyId): ?string
+    {
+        if (! $companyId) {
+            return null;
+        }
+
+        $baseUrl = static::bitrixBaseUrl();
+
+        if ($baseUrl === '') {
+            return null;
+        }
+
+        return sprintf('%s/crm/company/details/%d/', $baseUrl, $companyId);
+    }
+
+    protected static function bitrixBaseUrl(): string
+    {
+        return rtrim(trim((string) config('services.bitrix24.base_url', '')), '/');
+    }
+
     protected static function isCounterpartyAuthenticated(): bool
     {
         return Filament::auth()->user() instanceof CounterpartyUser;
-    }
-
-    protected static function emailListValidationRule(): \Closure
-    {
-        return static function (string $attribute, mixed $value, \Closure $fail): void {
-            $value = trim((string) $value);
-
-            if ($value === '') {
-                return;
-            }
-
-            $emails = array_filter(
-                array_map('trim', preg_split('/[;,\n]+/u', $value) ?: []),
-                fn (string $email): bool => $email !== '',
-            );
-
-            if ($emails === []) {
-                return;
-            }
-
-            foreach ($emails as $email) {
-                if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-                    $fail('Поле Email должно содержать корректный email или список email через запятую или точку с запятой.');
-
-                    return;
-                }
-            }
-        };
     }
 }

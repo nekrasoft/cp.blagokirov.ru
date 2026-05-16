@@ -2,8 +2,48 @@
 
 namespace App\Filament\Resources\Concerns;
 
+use Filament\Navigation\NavigationItem;
+use Illuminate\Database\Eloquent\Model;
+
+use function Filament\Support\original_request;
+
 trait PreservesNavigationSearch
 {
+    public static function getUrl(?string $name = null, array $parameters = [], bool $isAbsolute = true, ?string $panel = null, ?Model $tenant = null, bool $shouldGuessMissingParameters = false, ?string $configuration = null): string
+    {
+        if (
+            ($name === null || $name === '' || $name === 'index' || $name === 'edit')
+            && ! array_key_exists('search', $parameters)
+        ) {
+            $parameters = array_merge($parameters, static::currentSearchQueryParameter());
+        }
+
+        return parent::getUrl($name, $parameters, $isAbsolute, $panel, $tenant, $shouldGuessMissingParameters, $configuration);
+    }
+
+    public static function getNavigationItems(): array
+    {
+        if (! static::hasPage('index')) {
+            return [];
+        }
+
+        $activeRoutePattern = static::getNavigationItemActiveRoutePattern();
+
+        return [
+            NavigationItem::make(static::getNavigationLabel())
+                ->group(static::getNavigationGroup())
+                ->parentItem(static::getNavigationParentItem())
+                ->icon(static::getNavigationIcon())
+                ->activeIcon(static::getActiveNavigationIcon())
+                ->isActiveWhen(fn (): bool => original_request()->routeIs($activeRoutePattern))
+                ->badge(static::getNavigationBadge(), color: static::getNavigationBadgeColor())
+                ->badgeTooltip(static::getNavigationBadgeTooltip())
+                ->sort(static::getNavigationSort())
+                ->url(static::getNavigationUrl())
+                ->extraAttributes(['data-preserve-navigation-search' => 'true']),
+        ];
+    }
+
     public static function getNavigationUrl(): string
     {
         return static::getUrl('index', static::currentSearchQueryParameter());
@@ -11,8 +51,21 @@ trait PreservesNavigationSearch
 
     protected static function currentSearchQueryParameter(): array
     {
-        $search = request()->query('search');
+        if (request()->query->has('search')) {
+            return static::normalizeSearchQueryParameter(request()->query('search'));
+        }
 
+        $livewireSearch = static::searchQueryFromLivewireRequest();
+
+        if ($livewireSearch['hasSearch']) {
+            return static::normalizeSearchQueryParameter($livewireSearch['search']);
+        }
+
+        return static::normalizeSearchQueryParameter(static::searchQueryFromUrl(request()->header('Referer')));
+    }
+
+    protected static function normalizeSearchQueryParameter(mixed $search): array
+    {
         if (is_array($search)) {
             $search = reset($search);
         }
@@ -26,5 +79,60 @@ trait PreservesNavigationSearch
         return [
             'search' => $search,
         ];
+    }
+
+    /**
+     * @return array{hasSearch: bool, search: mixed}
+     */
+    protected static function searchQueryFromLivewireRequest(): array
+    {
+        $components = request()->input('components');
+
+        if (! is_array($components)) {
+            $requestInput = request()->request->all();
+            $components = $requestInput['components'] ?? null;
+        }
+
+        if (! is_array($components)) {
+            return [
+                'hasSearch' => false,
+                'search' => null,
+            ];
+        }
+
+        foreach ($components as $component) {
+            $updates = $component['updates'] ?? null;
+
+            if (! is_array($updates) || ! array_key_exists('tableSearch', $updates)) {
+                continue;
+            }
+
+            return [
+                'hasSearch' => true,
+                'search' => $updates['tableSearch'],
+            ];
+        }
+
+        return [
+            'hasSearch' => false,
+            'search' => null,
+        ];
+    }
+
+    protected static function searchQueryFromUrl(?string $url): mixed
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $queryString = parse_url($url, PHP_URL_QUERY);
+
+        if (! is_string($queryString)) {
+            return null;
+        }
+
+        parse_str($queryString, $query);
+
+        return $query['search'] ?? null;
     }
 }

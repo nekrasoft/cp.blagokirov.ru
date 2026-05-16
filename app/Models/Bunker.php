@@ -29,6 +29,7 @@ class Bunker extends Model
         'fill_level',
         'last_filled_at',
         'last_filled_by',
+        'fill_level_source',
         'contact_phone',
         'lat',
         'lng',

@@ -2,16 +2,18 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\CounterpartyUserResource\Pages\CreateCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\EditCounterpartyUser;
 use App\Filament\Resources\CounterpartyUserResource\Pages\ListCounterpartyUsers;
 use App\Models\CounterpartyUser;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -23,11 +25,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use UnitEnum;
 
 class CounterpartyUserResource extends Resource
 {
+    use AuthorizesAdminWrites;
+    use PreservesNavigationSearch;
+
     protected static ?string $model = CounterpartyUser::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
@@ -80,11 +86,32 @@ class CounterpartyUserResource extends Resource
                     ->label('Активен')
                     ->default(true)
                     ->required(),
+                Toggle::make('is_demo')
+                    ->label('Демо-режим')
+                    ->helperText('Для этого пользователя данные клиентского кабинета будут читаться из демо-БД.')
+                    ->default(false)
+                    ->required(),
             ]);
     }
 
     public static function table(Table $table): Table
     {
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (static::hasAdminWriteAccess()) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
+        }
+
         return $table
             ->defaultSort('login')
             ->columns([
@@ -109,6 +136,10 @@ class CounterpartyUserResource extends Resource
                     ->label('Активен')
                     ->boolean()
                     ->sortable(),
+                IconColumn::make('is_demo')
+                    ->label('Демо')
+                    ->boolean()
+                    ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
                     ->dateTime('d.m.Y H:i')
@@ -119,21 +150,17 @@ class CounterpartyUserResource extends Resource
                 TernaryFilter::make('is_active')
                     ->label('Активность')
                     ->boolean(),
+                TernaryFilter::make('is_demo')
+                    ->label('Демо-режим')
+                    ->boolean(),
                 TernaryFilter::make('district_scope')
                     ->label('Районный фильтр')
                     ->nullable()
                     ->trueLabel('Задан')
                     ->falseLabel('Не задан'),
             ])
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
@@ -148,6 +175,34 @@ class CounterpartyUserResource extends Resource
     public static function canAccess(): bool
     {
         return ! static::isCounterpartyAuthenticated() && parent::canAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function isCounterpartyAuthenticated(): bool

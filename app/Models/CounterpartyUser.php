@@ -18,6 +18,7 @@ class CounterpartyUser extends Authenticatable implements FilamentUser, HasName
         'counterparty_id',
         'district_scope',
         'is_active',
+        'is_demo',
     ];
 
     protected $hidden = [
@@ -27,6 +28,7 @@ class CounterpartyUser extends Authenticatable implements FilamentUser, HasName
     protected $casts = [
         'counterparty_id' => 'integer',
         'is_active' => 'boolean',
+        'is_demo' => 'boolean',
     ];
 
     public function counterparty(): BelongsTo

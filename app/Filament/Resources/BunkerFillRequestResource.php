@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BunkerFillRequestResource\Pages\ListBunkerFillRequests;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
+use App\Filament\Support\DashboardMetrics;
 use App\Models\BunkerFillRequest;
 use App\Models\CounterpartyUser;
 use BackedEnum;
@@ -74,8 +75,17 @@ class BunkerFillRequestResource extends Resource
                 ->sortable();
         }
 
+        if (static::hasColumn('fill_level')) {
+            $columns[] = TextColumn::make('fill_level')
+                ->label('Заполненность')
+                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
+                ->badge()
+                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
+                ->sortable();
+        }
+
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
@@ -106,8 +116,10 @@ class BunkerFillRequestResource extends Resource
 
         if (static::hasColumn('executed_at')) {
             $columns[] = TextColumn::make('executed_at')
-                ->label('Исполнена')
-                ->date('d.m.Y')
+                ->label('Исполнение')
+                ->badge()
+                ->formatStateUsing(fn ($state): string => $state ? 'Исполнена '.$state->format('d.m.Y') : 'Не исполнена')
+                ->color(fn ($state): string => $state ? 'success' : 'warning')
                 ->sortable();
         }
 
@@ -124,7 +136,10 @@ class BunkerFillRequestResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions([])
-            ->toolbarActions([]);
+            ->toolbarActions([])
+            ->emptyStateIcon('heroicon-o-inbox')
+            ->emptyStateHeading('Заявок пока нет')
+            ->emptyStateDescription('Когда бункеры отметят как заполненные, заявки появятся в этой истории.');
     }
 
     public static function getPages(): array
@@ -163,7 +178,9 @@ class BunkerFillRequestResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('counterparty_id', $counterpartyId);
+        $query->where('counterparty_id', $counterpartyId);
+
+        return DashboardMetrics::applyDistrictScopeToFillRequestsQuery($query, $counterpartyUser);
     }
 
     public static function canCreate(): bool

@@ -12,9 +12,12 @@ class ListCounterpartyUsers extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        if (! CounterpartyUserResource::canCreate()) {
+            return [];
+        }
+
         return [
             CreateAction::make(),
         ];
     }
 }
-

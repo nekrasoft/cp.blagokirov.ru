@@ -3,7 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\CounterpartyLogin;
-use App\Filament\Resources\WorkResource;
+use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
+use App\Filament\Support\TailAdminTheme;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -12,7 +14,6 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -25,28 +26,30 @@ class CounterpartyPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return TailAdminTheme::configure($panel)
             ->id('counterparty')
             ->path('billing')
             ->favicon(asset('favicon.svg'))
             ->login(CounterpartyLogin::class)
             ->authGuard('counterparty')
-            ->homeUrl(fn (): string => WorkResource::getUrl(panel: 'counterparty'))
+            ->homeUrl(fn (): string => CounterpartyDashboard::getUrl(panel: 'counterparty'))
             ->brandName(function (): string {
                 $user = Filament::auth()->user();
-                $counterpartyName = trim((string) ($user?->counterparty?->name ?? ''));
-
+                $counterparty = $user?->counterparty;
+                $counterpartyName = trim((string) ($counterparty?->name ?? ''));
                 if ($counterpartyName === '') {
                     return 'Биллинг';
                 }
 
-                return 'Биллинг — ' . $counterpartyName;
+                $brandName = 'Биллинг — '.$counterpartyName;
+
+                return $brandName;
             })
-            ->colors([
-                'primary' => Color::Blue,
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Counterparty/Pages'), for: 'App\Filament\Counterparty\Pages')
+            ->pages([
+                CounterpartyDashboard::class,
+            ])
             ->navigationItems([
                 NavigationItem::make('Карта бункеров ↗')
                     ->icon(Heroicon::OutlinedMap)
@@ -62,6 +65,7 @@ class CounterpartyPanelProvider extends PanelProvider
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
+                UseCounterpartyDemoDatabase::class,
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([

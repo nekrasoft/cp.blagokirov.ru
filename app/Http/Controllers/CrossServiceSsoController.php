@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Resources\WorkResource;
+use App\Filament\Counterparty\Dashboard\CounterpartyDashboard;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use App\Models\CounterpartyUser;
 use App\Support\CrossServiceSsoToken;
 use InvalidArgumentException;
@@ -77,8 +78,9 @@ class CrossServiceSsoController extends Controller
 
         Auth::guard('counterparty')->login($user);
         $request->session()->regenerate();
+        $request->session()->put(UseCounterpartyDemoDatabase::SESSION_KEY, $user->is_demo);
 
-        return redirect()->to(WorkResource::getUrl(panel: 'counterparty'));
+        return redirect()->to(CounterpartyDashboard::getUrl(panel: 'counterparty'));
     }
 
     private function redirectToBillingLoginWithSsoError(): RedirectResponse

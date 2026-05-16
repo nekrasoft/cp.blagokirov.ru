@@ -14,34 +14,36 @@
         description="Надеемся, вы остались довольны результатом. Пожалуйста, поделитесь впечатлениями, оставив отзыв в онлайн-сервисах."
     >
         <x-slot name="footer">
-            <p class="text-sm">
-                Вы можете просто поставить нам оценку, а также написать пару слов — ваш отзыв поможет другим клиентам.
-            </p>
+            <div class="w-full">
+                <p class="text-sm">
+                    Вы можете просто поставить нам оценку, а также написать пару слов — ваш отзыв поможет другим клиентам.
+                </p>
 
-            <div class="mt-4 flex flex-wrap gap-2">
-                <x-filament::button
-                    tag="a"
-                    href="https://yandex.ru/maps/org/10924053513/?add-review=true"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    icon="heroicon-m-arrow-top-right-on-square"
-                    size="sm"
-                    color="success"
-                >
-                    Оставить отзыв в Яндекс
-                </x-filament::button>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <x-filament::button
+                        tag="a"
+                        href="https://yandex.ru/maps/org/10924053513/?add-review=true"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        icon="heroicon-m-arrow-top-right-on-square"
+                        size="sm"
+                        color="success"
+                    >
+                        Оставить отзыв в Яндекс
+                    </x-filament::button>
 
-                <x-filament::button
-                    tag="a"
-                    href="https://g.page/r/CT-lPsP9hSHrEAE/review"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    icon="heroicon-m-arrow-top-right-on-square"
-                    size="sm"
-                    color="gray"
-                >
-                    Оставить отзыв в Google
-                </x-filament::button>
+                    <x-filament::button
+                        tag="a"
+                        href="https://g.page/r/CT-lPsP9hSHrEAE/review"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        icon="heroicon-m-arrow-top-right-on-square"
+                        size="sm"
+                        color="gray"
+                    >
+                        Оставить отзыв в Google
+                    </x-filament::button>
+                </div>
             </div>
         </x-slot>
     </x-filament::callout>

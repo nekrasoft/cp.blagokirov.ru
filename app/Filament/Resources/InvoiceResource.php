@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
-use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -32,6 +33,7 @@ use UnitEnum;
 
 class InvoiceResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = Invoice::class;
@@ -143,7 +145,7 @@ class InvoiceResource extends Resource
         $isCounterparty = static::isCounterpartyAuthenticated();
         $columns = [];
 
-        if (static::hasColumn('id')) {
+        if (! $isCounterparty && static::hasColumn('id')) {
             $columns[] = TextColumn::make('id')
                 ->label('ID')
                 ->sortable();
@@ -167,7 +169,7 @@ class InvoiceResource extends Resource
         }
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
-            $columns[] = TextColumn::make('counterparty.' . static::counterpartyTitleAttribute())
+            $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
                 ->searchable()
                 ->sortable()
@@ -186,6 +188,8 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('due_date')
                 ->label('Срок оплаты')
                 ->date('d.m.Y')
+                ->color(fn (Invoice $record): string => static::isOverdue($record) ? 'danger' : 'gray')
+                ->icon(fn (Invoice $record): ?string => static::isOverdue($record) ? 'heroicon-m-exclamation-triangle' : null)
                 ->sortable();
         }
 
@@ -193,11 +197,21 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('status')
                 ->label('Статус')
                 ->badge()
+                ->formatStateUsing(fn (?string $state): string => match ($state) {
+                    'draft' => 'Черновик',
+                    'pending' => 'В обработке',
+                    'issued' => 'К оплате',
+                    'paid' => 'Оплачен',
+                    'failed' => 'Ошибка',
+                    'cancelled' => 'Отменён',
+                    default => 'Без статуса',
+                })
                 ->color(fn (?string $state): string => match ($state) {
                     'paid' => 'success',
-                    'issued' => 'info',
+                    'issued' => 'warning',
                     'failed', 'cancelled' => 'danger',
-                    'draft', 'pending' => 'warning',
+                    'draft' => 'gray',
+                    'pending' => 'info',
                     default => 'gray',
                 })
                 ->sortable();
@@ -207,7 +221,7 @@ class InvoiceResource extends Resource
             $paidAmountColumn = TextColumn::make('paid_amount')
                 ->label('Оплачено')
                 ->formatStateUsing(
-                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ')
+                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ').' ₽'
                 )
                 ->sortable();
 
@@ -220,7 +234,7 @@ class InvoiceResource extends Resource
 
         if (static::hasColumn('paid_at')) {
             $paidAtColumn = TextColumn::make('paid_at')
-                ->label('Оплачен')
+                ->label('Дата оплаты')
                 ->date('d.m.Y')
                 ->sortable();
 
@@ -234,8 +248,15 @@ class InvoiceResource extends Resource
         if (static::hasColumn('pdf_url')) {
             $pdfColumn = TextColumn::make('pdf_url')
                 ->label('PDF')
-                ->url(fn (?string $state): ?string => $state ?: null, shouldOpenInNewTab: true)
-                ->limit(50);
+                ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true)
+                ->formatStateUsing(
+                    fn (?string $state, Invoice $record): ?string => filled($state)
+                        ? 'Открыть счет №'.($record->invoice_number ?: $record->id)
+                        : null
+                )
+                ->color(fn (Invoice $record): string => filled($record->pdf_url) ? 'primary' : 'gray')
+                ->icon(fn (Invoice $record): ?string => filled($record->pdf_url) ? 'heroicon-m-arrow-top-right-on-square' : null)
+                ->iconPosition('after');
 
             if (! $isCounterparty) {
                 $pdfColumn->toggleable(isToggledHiddenByDefault: true);
@@ -244,7 +265,7 @@ class InvoiceResource extends Resource
             $columns[] = $pdfColumn;
         }
 
-        if (static::hasColumn('bitrix_task_id')) {
+        if (! $isCounterparty && static::hasColumn('bitrix_task_id')) {
             $columns[] = TextColumn::make('bitrix_task_id')
                 ->label('Задача')
                 ->color(
@@ -264,15 +285,13 @@ class InvoiceResource extends Resource
                 ->toggleable();
         }
 
-        if (static::hasColumn('created_at')) {
+        if (! $isCounterparty && static::hasColumn('created_at')) {
             $createdAtColumn = TextColumn::make('created_at')
                 ->label('Создан')
                 ->dateTime('d.m.Y H:i')
                 ->sortable();
 
-            if (! $isCounterparty) {
-                $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
-            }
+            $createdAtColumn->toggleable(isToggledHiddenByDefault: true);
 
             $columns[] = $createdAtColumn;
         }
@@ -283,12 +302,12 @@ class InvoiceResource extends Resource
             $filters[] = SelectFilter::make('status')
                 ->label('Статус')
                 ->options([
-                    'draft' => 'draft',
-                    'pending' => 'pending',
-                    'issued' => 'issued',
-                    'paid' => 'paid',
-                    'failed' => 'failed',
-                    'cancelled' => 'cancelled',
+                    'draft' => 'Черновик',
+                    'pending' => 'В обработке',
+                    'issued' => 'К оплате',
+                    'paid' => 'Оплачен',
+                    'failed' => 'Ошибка',
+                    'cancelled' => 'Отменён',
                 ]);
         }
 
@@ -301,7 +320,7 @@ class InvoiceResource extends Resource
         $recordActions = [];
         $toolbarActions = [];
 
-        if (! $isCounterparty) {
+        if (! $isCounterparty && static::hasAdminWriteAccess()) {
             $recordActions = [
                 EditAction::make(),
                 DeleteAction::make(),
@@ -319,7 +338,10 @@ class InvoiceResource extends Resource
             ->columns($columns)
             ->filters($filters)
             ->recordActions($recordActions)
-            ->toolbarActions($toolbarActions);
+            ->toolbarActions($toolbarActions)
+            ->emptyStateIcon('heroicon-o-document-text')
+            ->emptyStateHeading('Счетов пока нет')
+            ->emptyStateDescription('Когда счета появятся, здесь будут видны статус оплаты, срок и ссылки на PDF.');
     }
 
     public static function getPages(): array
@@ -339,7 +361,6 @@ class InvoiceResource extends Resource
     public static function canAccess(): bool
     {
         return static::hasTable()
-            && ! static::isCounterpartyAuthenticated()
             && parent::canAccess();
     }
 
@@ -356,27 +377,41 @@ class InvoiceResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('counterparty_id', $counterpartyUser->counterparty_id);
+        $counterpartyId = (int) $counterpartyUser->counterparty_id;
+
+        if ($counterpartyId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('counterparty_id', $counterpartyId);
     }
 
     public static function canCreate(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool
@@ -460,6 +495,19 @@ class InvoiceResource extends Resource
     protected static function bitrixBaseUrl(): string
     {
         return rtrim(trim((string) config('services.bitrix24.base_url', '')), '/');
+    }
+
+    protected static function isOverdue(Invoice $record): bool
+    {
+        if (! static::hasColumn('due_date') || ! $record->due_date) {
+            return false;
+        }
+
+        if (static::hasColumn('status') && $record->status === 'paid') {
+            return false;
+        }
+
+        return $record->due_date->isPast() && ! $record->due_date->isToday();
     }
 
     protected static function counterpartyTitleAttribute(): string
