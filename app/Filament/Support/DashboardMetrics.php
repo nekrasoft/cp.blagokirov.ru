@@ -733,7 +733,13 @@ final class DashboardMetrics
 
                     $rows[$key]['quantity'] += $quantity;
                     $rows[$key]['volume'] += self::monthlySummaryWorkVolume($work, $name, $quantity);
-                    $rows[$key]['revenue'] += (float) ($work->revenue ?? 0);
+                    $revenue = (float) ($work->revenue ?? 0);
+
+                    $rows[$key]['revenue'] += $revenue;
+
+                    if (self::isMonthlySummaryCashWasteRemovalCategory($name)) {
+                        $rows[$key]['received'] += $revenue;
+                    }
                 });
         } catch (Throwable) {
             //
@@ -779,17 +785,26 @@ final class DashboardMetrics
 
                     $weights = [];
                     $fallbackWeights = [];
+                    $cashRevenue = 0.0;
 
                     foreach ($invoiceWorks as $work) {
                         $name = self::monthlySummaryCategoryName($work);
                         $key = self::monthlySummaryCategoryKey($name);
                         $revenue = (float) ($work->revenue ?? 0);
 
+                        if (self::isMonthlySummaryCashWasteRemovalCategory($name)) {
+                            $cashRevenue += max(0.0, $revenue);
+
+                            continue;
+                        }
+
                         self::ensureMonthlySummaryRow($rows, $key, $name);
 
                         $weights[$key] = ($weights[$key] ?? 0.0) + max(0.0, $revenue);
                         $fallbackWeights[$key] = ($fallbackWeights[$key] ?? 0.0) + 1.0;
                     }
+
+                    $paidAmount = max(0.0, $paidAmount - $cashRevenue);
 
                     $totalWeight = array_sum($weights);
 
@@ -856,6 +871,14 @@ final class DashboardMetrics
     private static function monthlySummaryCategoryKey(string $name): string
     {
         return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $name) ?? $name));
+    }
+
+    private static function isMonthlySummaryCashWasteRemovalCategory(string $name): bool
+    {
+        $name = self::monthlySummaryCategoryKey($name);
+
+        return preg_match('/(^|[^\pL\pN])фл([^\pL\pN]|$)/u', $name) === 1
+            && str_contains($name, 'вывоз мусора');
     }
 
     /**

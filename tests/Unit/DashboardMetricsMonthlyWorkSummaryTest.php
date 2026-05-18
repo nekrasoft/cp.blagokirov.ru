@@ -87,12 +87,12 @@ class DashboardMetricsMonthlyWorkSummaryTest extends TestCase
         $this->assertSame(3.0, $wasteRemoval['quantity']);
         $this->assertSame(90.0, $wasteRemoval['volume']);
         $this->assertSame(150.0, $wasteRemoval['revenue']);
-        $this->assertSame(0.0, $wasteRemoval['received']);
+        $this->assertSame(150.0, $wasteRemoval['received']);
 
         $this->assertSame(16.5, $summary['totals']['quantity']);
         $this->assertSame(278.5, $summary['totals']['volume']);
         $this->assertSame(1450.0, $summary['totals']['revenue']);
-        $this->assertSame(1500.0, $summary['totals']['received']);
+        $this->assertSame(1650.0, $summary['totals']['received']);
     }
 
     /**
