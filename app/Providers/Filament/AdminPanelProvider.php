@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Pages\AdminDashboard;
+use App\Filament\Pages\DriverWorkTimeSummaryPage;
 use App\Filament\Pages\MonthlyWorkSummaryPage;
 use App\Filament\Support\TailAdminTheme;
 use Filament\Http\Middleware\Authenticate;
@@ -34,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 AdminDashboard::class,
                 MonthlyWorkSummaryPage::class,
+                DriverWorkTimeSummaryPage::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

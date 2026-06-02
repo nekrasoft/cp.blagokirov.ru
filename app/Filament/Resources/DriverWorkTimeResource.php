@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\DriverWorkTimeResource\Pages\CreateDriverWorkTime;
 use App\Filament\Resources\DriverWorkTimeResource\Pages\EditDriverWorkTime;
 use App\Filament\Resources\DriverWorkTimeResource\Pages\ListDriverWorkTimes;
+use App\Filament\Support\DriverWorkTimeSummary;
 use App\Models\CounterpartyUser;
 use App\Models\DriverWorkTime;
 use BackedEnum;
@@ -33,6 +35,7 @@ use UnitEnum;
 
 class DriverWorkTimeResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = DriverWorkTime::class;
@@ -237,6 +240,29 @@ class DriverWorkTimeResource extends Resource
         }
 
         if (static::hasColumn('work_date')) {
+            $filters[] = Filter::make('work_month')
+                ->label('Месяц')
+                ->form([
+                    Select::make('month')
+                        ->label('Месяц')
+                        ->options(fn (): array => DriverWorkTimeSummary::monthOptions())
+                        ->searchable(),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    $month = trim((string) ($data['month'] ?? ''));
+
+                    if ($month === '') {
+                        return $query;
+                    }
+
+                    $month = DriverWorkTimeSummary::month($month);
+
+                    return $query->whereBetween('work_date', [
+                        $month->startOfMonth()->toDateString(),
+                        $month->endOfMonth()->toDateString(),
+                    ]);
+                });
+
             $filters[] = Filter::make('work_date_period')
                 ->label('Период')
                 ->form([
@@ -258,19 +284,28 @@ class DriverWorkTimeResource extends Resource
                 });
         }
 
+        $recordActions = [];
+        $toolbarActions = [];
+
+        if (static::hasAdminWriteAccess()) {
+            $recordActions = [
+                EditAction::make(),
+                DeleteAction::make(),
+            ];
+
+            $toolbarActions = [
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ];
+        }
+
         return $table
             ->defaultSort(static::hasColumn('work_date') ? 'work_date' : 'id', 'desc')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions($recordActions)
+            ->toolbarActions($toolbarActions);
     }
 
     public static function getPages(): array
@@ -296,22 +331,30 @@ class DriverWorkTimeResource extends Resource
 
     public static function canCreate(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canCreate();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canCreate();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canEdit($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDelete($record);
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDelete($record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isCounterpartyAuthenticated() && parent::canDeleteAny();
+        return static::hasAdminWriteAccess()
+            && ! static::isCounterpartyAuthenticated()
+            && parent::canDeleteAny();
     }
 
     protected static function hasTable(): bool
