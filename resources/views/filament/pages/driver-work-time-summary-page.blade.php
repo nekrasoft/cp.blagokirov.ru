@@ -31,12 +31,6 @@
                         <th scope="col" class="px-4 py-3">Источник</th>
                         <th scope="col" class="px-4 py-3">ID водителя</th>
                         <th scope="col" class="px-4 py-3 text-right">Рабочих дней</th>
-                        <th scope="col" class="px-4 py-3 text-right">Записей</th>
-                        <th scope="col" class="px-4 py-3 text-right">Суммарное время</th>
-                        <th scope="col" class="px-4 py-3 text-right">Часы, десятичные</th>
-                        <th scope="col" class="px-4 py-3 text-right">Ставка</th>
-                        <th scope="col" class="px-4 py-3 text-right">Порог, ч</th>
-                        <th scope="col" class="px-4 py-3 text-right">Ставка переработки</th>
                         <th scope="col" class="px-4 py-3 text-right">Базовые часы</th>
                         <th scope="col" class="px-4 py-3 text-right">Переработка</th>
                         <th scope="col" class="px-4 py-3 text-right">ЗП</th>
@@ -59,24 +53,6 @@
                                 {{ $row['work_days'] }}
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $row['record_count'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right font-semibold tabular-nums">
-                                {{ $row['total_duration_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $row['total_hours_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $row['hourly_rate_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $row['overtime_threshold_hours_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $row['overtime_hourly_rate_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
                                 {{ $row['base_hours_formatted'] }}
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">
@@ -88,7 +64,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Нет данных за выбранный месяц.
                             </td>
                         </tr>
@@ -103,20 +79,6 @@
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">
                                 {{ $summary['totals']['work_days'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $summary['totals']['record_count'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $summary['totals']['total_duration_formatted'] }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ $summary['totals']['total_hours_formatted'] }}
-                            </td>
-                            <td colspan="3" class="px-4 py-3 text-right tabular-nums">
-                                @if ($summary['totals']['missing_salary_settings_count'] > 0)
-                                    Не задано: {{ $summary['totals']['missing_salary_settings_count'] }}
-                                @endif
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">
                                 {{ $summary['totals']['base_hours_formatted'] }}

@@ -138,4 +138,17 @@ class DriverWorkTimeSummaryTest extends TestCase
 
         $this->assertFalse(Schema::hasTable('driver_salary_settings'));
     }
+
+    public function test_driver_work_time_source_user_migration_adds_lookup_index(): void
+    {
+        $migration = require database_path('migrations/2026_06_04_000012_add_source_user_index_to_driver_work_time_table.php');
+
+        $migration->up();
+
+        $this->assertTrue(Schema::hasIndex('driver_work_time', ['source', 'source_user_id', 'work_date']));
+
+        $migration->down();
+
+        $this->assertFalse(Schema::hasIndex('driver_work_time', ['source', 'source_user_id', 'work_date']));
+    }
 }

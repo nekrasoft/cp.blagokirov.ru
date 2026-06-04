@@ -9,6 +9,7 @@ use App\Filament\Resources\DriverSalarySettingResource\Pages\EditDriverSalarySet
 use App\Filament\Resources\DriverSalarySettingResource\Pages\ListDriverSalarySettings;
 use App\Models\CounterpartyUser;
 use App\Models\DriverSalarySetting;
+use App\Models\DriverWorkTime;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -59,19 +61,30 @@ class DriverSalarySettingResource extends Resource
                     'max' => 'MAX',
                 ])
                 ->default('max')
+                ->live()
+                ->afterStateUpdated(function (Set $set): void {
+                    $set('source_user_id', null);
+                    $set('source_user_name', null);
+                })
                 ->searchable()
                 ->required(),
 
-            TextInput::make('source_user_id')
+            Select::make('source_user_id')
                 ->label('ID водителя')
                 ->required()
+                ->live()
+                ->searchable()
+                ->options(fn (Get $get): array => static::driverOptions((string) $get('source')))
+                ->getSearchResultsUsing(fn (Get $get, string $search): array => static::driverOptions((string) $get('source'), $search))
+                ->getOptionLabelUsing(fn (Get $get, mixed $value): ?string => static::driverLabel((string) $get('source'), $value))
+                ->afterStateUpdated(fn (Get $get, Set $set, ?string $state): mixed => $set('source_user_name', static::driverName((string) $get('source'), $state)))
                 ->unique(
                     table: DriverSalarySetting::class,
                     column: 'source_user_id',
                     ignoreRecord: true,
                     modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule->where('source', (string) $get('source')),
                 )
-                ->maxLength(64),
+                ->selectablePlaceholder(false),
 
             TextInput::make('source_user_name')
                 ->label('Водитель')
@@ -223,6 +236,100 @@ class DriverSalarySettingResource extends Resource
         }
 
         return static::$hasTableCache;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function driverOptions(string $source, ?string $search = null): array
+    {
+        if (! static::canQueryDriverWorkTime()) {
+            return [];
+        }
+
+        $source = trim($source);
+        $search = trim((string) $search);
+
+        try {
+            $query = DriverWorkTime::query()
+                ->select(['source_user_id'])
+                ->selectRaw("MAX(NULLIF(TRIM(source_user_name), '')) as source_user_name")
+                ->where('source', $source)
+                ->whereNotNull('source_user_id')
+                ->where('source_user_id', '<>', '')
+                ->groupBy('source_user_id')
+                ->orderBy('source_user_id')
+                ->limit(50);
+
+            if ($search !== '') {
+                $query->where('source_user_id', 'like', $search.'%');
+            }
+
+            return $query
+                ->get()
+                ->mapWithKeys(fn (DriverWorkTime $driver): array => [
+                    (string) $driver->source_user_id => static::formatDriverOption(
+                        (string) $driver->source_user_id,
+                        (string) $driver->source_user_name,
+                    ),
+                ])
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    protected static function driverLabel(string $source, ?string $driverId): ?string
+    {
+        $driverId = trim((string) $driverId);
+
+        if ($driverId === '') {
+            return null;
+        }
+
+        return static::formatDriverOption($driverId, static::driverName($source, $driverId));
+    }
+
+    protected static function driverName(string $source, ?string $driverId): string
+    {
+        $source = trim($source);
+        $driverId = trim((string) $driverId);
+
+        if ($driverId === '' || ! static::canQueryDriverWorkTime()) {
+            return '';
+        }
+
+        try {
+            return (string) DriverWorkTime::query()
+                ->where('source', $source)
+                ->where('source_user_id', $driverId)
+                ->whereNotNull('source_user_name')
+                ->where('source_user_name', '<>', '')
+                ->orderByDesc('work_date')
+                ->value('source_user_name');
+        } catch (Throwable) {
+            return '';
+        }
+    }
+
+    protected static function formatDriverOption(string $driverId, string $driverName): string
+    {
+        $driverName = trim($driverName);
+
+        return $driverName === '' ? $driverId : "{$driverId} ({$driverName})";
+    }
+
+    protected static function canQueryDriverWorkTime(): bool
+    {
+        try {
+            return SchemaFacade::hasTable('driver_work_time')
+                && SchemaFacade::hasColumn('driver_work_time', 'source')
+                && SchemaFacade::hasColumn('driver_work_time', 'source_user_id')
+                && SchemaFacade::hasColumn('driver_work_time', 'source_user_name')
+                && SchemaFacade::hasColumn('driver_work_time', 'work_date');
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     protected static function isCounterpartyAuthenticated(): bool
