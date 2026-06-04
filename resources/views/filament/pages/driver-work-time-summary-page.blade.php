@@ -28,7 +28,6 @@
                 <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500 dark:bg-white/[0.04] dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-4 py-3">Водитель</th>
-                        <th scope="col" class="px-4 py-3">Источник</th>
                         <th scope="col" class="px-4 py-3">ID водителя</th>
                         <th scope="col" class="px-4 py-3 text-right">Рабочих дней</th>
                         <th scope="col" class="px-4 py-3 text-right">Базовые часы</th>
@@ -42,9 +41,6 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.04]">
                             <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
                                 {{ $row['driver_name'] }}
-                            </td>
-                            <td class="px-4 py-3">
-                                {{ $row['source'] }}
                             </td>
                             <td class="px-4 py-3">
                                 {{ $row['driver_id'] }}
@@ -64,7 +60,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Нет данных за выбранный месяц.
                             </td>
                         </tr>
@@ -74,7 +70,7 @@
                 @if ($summary['has_data'])
                     <tfoot class="bg-gray-100 font-bold text-gray-900 dark:bg-white/[0.06] dark:text-white">
                         <tr>
-                            <td colspan="3" class="px-4 py-3">
+                            <td colspan="2" class="px-4 py-3">
                                 {{ $summary['totals']['driver_name'] }}
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">

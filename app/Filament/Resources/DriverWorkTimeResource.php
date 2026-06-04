@@ -189,18 +189,6 @@ class DriverWorkTimeResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('source')) {
-            $columns[] = TextColumn::make('source')
-                ->label('Источник')
-                ->badge()
-                ->formatStateUsing(fn (?string $state): string => match ($state) {
-                    'max' => 'MAX',
-                    default => strtoupper((string) $state),
-                })
-                ->sortable()
-                ->toggleable();
-        }
-
         if (static::hasColumn('source_chat_id')) {
             $columns[] = TextColumn::make('source_chat_id')
                 ->label('ID чата')

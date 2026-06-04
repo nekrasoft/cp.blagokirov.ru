@@ -146,15 +146,6 @@ class DriverSalarySettingResource extends Resource
                     ->copyable()
                     ->sortable(),
 
-                TextColumn::make('source')
-                    ->label('Источник')
-                    ->badge()
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'max' => 'MAX',
-                        default => strtoupper((string) $state),
-                    })
-                    ->sortable(),
-
                 TextColumn::make('hourly_rate')
                     ->label('Ставка')
                     ->money('RUB')
