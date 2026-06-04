@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256:build-source-files-normalized:v2",
-  "fingerprint": "01b7e5903705d47d6af24cf36243c80f92f47fec199f346b8a6b2571f471da74",
+  "fingerprint": "0dbe48f759b47dd22daacb43ff3b1e327a9cab1b5b25b0aadbb1855158404fed",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",
     "app/Filament/Auth/CounterpartyLogin.php",
@@ -13,6 +13,7 @@
     "app/Filament/Dashboard/Widgets/CounterpartyOverviewStats.php",
     "app/Filament/Dashboard/Widgets/CounterpartyRecentWorksTable.php",
     "app/Filament/Dashboard/Widgets/CounterpartyUnpaidInvoicesTable.php",
+    "app/Filament/Dashboard/Widgets/DailyProfitChart.php",
     "app/Filament/Dashboard/Widgets/FillRequestsTrendChart.php",
     "app/Filament/Dashboard/Widgets/MonthlyWorkSummaryWidget.php",
     "app/Filament/Dashboard/Widgets/RecentFillRequestsTable.php",

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Pages;
 use App\Filament\Dashboard\Widgets\AdminOverviewStats;
 use App\Filament\Dashboard\Widgets\AttentionBunkersTable;
 use App\Filament\Dashboard\Widgets\BunkerFillLevelChart;
+use App\Filament\Dashboard\Widgets\DailyProfitChart;
 use App\Filament\Dashboard\Widgets\FillRequestsTrendChart;
 use App\Filament\Dashboard\Widgets\MonthlyWorkSummaryWidget;
 use App\Filament\Dashboard\Widgets\RecentFillRequestsTable;
@@ -88,6 +89,7 @@ class AdminDashboard extends Dashboard
             FillRequestsTrendChart::class,
             BunkerFillLevelChart::class,
             RevenueByMonthChart::class,
+            DailyProfitChart::class,
             AttentionBunkersTable::class,
             RecentFillRequestsTable::class,
             UnpaidInvoicesTable::class,

@@ -11,12 +11,17 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 
 final class DashboardMetrics
 {
     public const STALE_BUNKER_PICKUP_DAYS = 14;
+    public const DAILY_PROFIT_CLOSED_DELAY_DAYS = 2;
+
+    private const PROFIT_FUEL_EXPENSE_CODE = '183';
+    private const PROFIT_LANDFILL_EXPENSE_CODE = '185';
 
     private const BUNKER_FILL_BUCKET_LABELS = ['0-49%', '50-69%', '70-99%', '100%'];
 
@@ -442,6 +447,94 @@ final class DashboardMetrics
         return ['labels' => $labels, 'data' => array_values($buckets)];
     }
 
+    public static function canBuildDailyProfit(): bool
+    {
+        return self::hasColumns('works', ['date', 'revenue'])
+            && self::hasColumns('daily_expense_allocations', ['expense_date', 'expense_code', 'amount']);
+    }
+
+    /**
+     * @return array{
+     *     labels: array<int, string>,
+     *     revenue: array<int, float>,
+     *     fuel_expense: array<int, float>,
+     *     landfill_expense: array<int, float>,
+     *     total_expense: array<int, float>,
+     *     profit: array<int, float>,
+     *     rows: array<int, array{date: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>
+     * }
+     */
+    public static function dailyProfitByDay(int $days = 14): array
+    {
+        $days = max(1, min($days, 90));
+        $end = CarbonImmutable::now()->subDays(self::DAILY_PROFIT_CLOSED_DELAY_DAYS)->startOfDay();
+        $start = $end->subDays($days - 1);
+        $buckets = [];
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $start->addDays($i);
+            $key = $date->toDateString();
+            $buckets[$key] = [
+                'date' => $key,
+                'revenue' => 0.0,
+                'fuel_expense' => 0.0,
+                'landfill_expense' => 0.0,
+                'total_expense' => 0.0,
+                'profit' => 0.0,
+            ];
+        }
+
+        if (! self::canBuildDailyProfit()) {
+            return self::formatDailyProfitBuckets($buckets);
+        }
+
+        try {
+            DB::table('works')
+                ->select('date')
+                ->selectRaw('SUM(revenue) as total')
+                ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+                ->groupBy('date')
+                ->get()
+                ->each(function ($row) use (&$buckets): void {
+                    $key = CarbonImmutable::parse($row->date)->toDateString();
+
+                    if (array_key_exists($key, $buckets)) {
+                        $buckets[$key]['revenue'] = (float) $row->total;
+                    }
+                });
+
+            DB::table('daily_expense_allocations')
+                ->select('expense_date', 'expense_code')
+                ->selectRaw('SUM(amount) as total')
+                ->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])
+                ->whereIn('expense_code', [self::PROFIT_FUEL_EXPENSE_CODE, self::PROFIT_LANDFILL_EXPENSE_CODE])
+                ->groupBy('expense_date', 'expense_code')
+                ->get()
+                ->each(function ($row) use (&$buckets): void {
+                    $key = CarbonImmutable::parse($row->expense_date)->toDateString();
+
+                    if (! array_key_exists($key, $buckets)) {
+                        return;
+                    }
+
+                    $column = $row->expense_code === self::PROFIT_FUEL_EXPENSE_CODE
+                        ? 'fuel_expense'
+                        : 'landfill_expense';
+                    $buckets[$key][$column] += (float) $row->total;
+                });
+        } catch (Throwable) {
+            //
+        }
+
+        foreach ($buckets as &$bucket) {
+            $bucket['total_expense'] = $bucket['fuel_expense'] + $bucket['landfill_expense'];
+            $bucket['profit'] = $bucket['revenue'] - $bucket['total_expense'];
+        }
+        unset($bucket);
+
+        return self::formatDailyProfitBuckets($buckets);
+    }
+
     public static function canBuildMonthlyWorkSummary(): bool
     {
         return self::hasTable('works')
@@ -641,6 +734,36 @@ final class DashboardMetrics
     public static function formatMoney(int|float $value): string
     {
         return number_format((float) $value, 0, ',', ' ').' ₽';
+    }
+
+    /**
+     * @param  array<string, array{date: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     * @return array{
+     *     labels: array<int, string>,
+     *     revenue: array<int, float>,
+     *     fuel_expense: array<int, float>,
+     *     landfill_expense: array<int, float>,
+     *     total_expense: array<int, float>,
+     *     profit: array<int, float>,
+     *     rows: array<int, array{date: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>
+     * }
+     */
+    private static function formatDailyProfitBuckets(array $buckets): array
+    {
+        $rows = array_values($buckets);
+
+        return [
+            'labels' => array_map(
+                fn (array $row): string => CarbonImmutable::parse($row['date'])->format('d.m'),
+                $rows,
+            ),
+            'revenue' => array_column($rows, 'revenue'),
+            'fuel_expense' => array_column($rows, 'fuel_expense'),
+            'landfill_expense' => array_column($rows, 'landfill_expense'),
+            'total_expense' => array_column($rows, 'total_expense'),
+            'profit' => array_column($rows, 'profit'),
+            'rows' => $rows,
+        ];
     }
 
     /**
