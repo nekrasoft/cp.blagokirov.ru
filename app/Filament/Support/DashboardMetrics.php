@@ -469,23 +469,39 @@ final class DashboardMetrics
         $days = max(1, min($days, 90));
         $end = CarbonImmutable::now()->subDays(self::DAILY_PROFIT_CLOSED_DELAY_DAYS)->startOfDay();
         $start = $end->subDays($days - 1);
+
+        return self::dailyProfitReport($start, $end, 'day');
+    }
+
+    /**
+     * @return array{
+     *     date_from: string,
+     *     date_to: string,
+     *     group_by: string,
+     *     labels: array<int, string>,
+     *     revenue: array<int, float>,
+     *     fuel_expense: array<int, float>,
+     *     landfill_expense: array<int, float>,
+     *     total_expense: array<int, float>,
+     *     profit: array<int, float>,
+     *     rows: array<int, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string}>,
+     *     totals: array{label: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string},
+     *     has_data: bool
+     * }
+     */
+    public static function dailyProfitReport(
+        CarbonInterface|string|null $dateFrom = null,
+        CarbonInterface|string|null $dateTo = null,
+        string $groupBy = 'day',
+    ): array {
+        $groupBy = $groupBy === 'month' ? 'month' : 'day';
+        [$start, $end] = self::dailyProfitPeriod($dateFrom, $dateTo);
         $buckets = [];
 
-        for ($i = 0; $i < $days; $i++) {
-            $date = $start->addDays($i);
-            $key = $date->toDateString();
-            $buckets[$key] = [
-                'date' => $key,
-                'revenue' => 0.0,
-                'fuel_expense' => 0.0,
-                'landfill_expense' => 0.0,
-                'total_expense' => 0.0,
-                'profit' => 0.0,
-            ];
-        }
+        self::fillDailyProfitBuckets($buckets, $start, $end, $groupBy);
 
         if (! self::canBuildDailyProfit()) {
-            return self::formatDailyProfitBuckets($buckets);
+            return self::formatDailyProfitReport($buckets, $start, $end, $groupBy);
         }
 
         try {
@@ -498,9 +514,7 @@ final class DashboardMetrics
                 ->each(function ($row) use (&$buckets): void {
                     $key = CarbonImmutable::parse($row->date)->toDateString();
 
-                    if (array_key_exists($key, $buckets)) {
-                        $buckets[$key]['revenue'] = (float) $row->total;
-                    }
+                    self::addDailyProfitBucketValue($buckets, $key, 'revenue', (float) $row->total);
                 });
 
             DB::table('daily_expense_allocations')
@@ -512,15 +526,11 @@ final class DashboardMetrics
                 ->get()
                 ->each(function ($row) use (&$buckets): void {
                     $key = CarbonImmutable::parse($row->expense_date)->toDateString();
-
-                    if (! array_key_exists($key, $buckets)) {
-                        return;
-                    }
-
                     $column = $row->expense_code === self::PROFIT_FUEL_EXPENSE_CODE
                         ? 'fuel_expense'
                         : 'landfill_expense';
-                    $buckets[$key][$column] += (float) $row->total;
+
+                    self::addDailyProfitBucketValue($buckets, $key, $column, (float) $row->total);
                 });
         } catch (Throwable) {
             //
@@ -532,7 +542,7 @@ final class DashboardMetrics
         }
         unset($bucket);
 
-        return self::formatDailyProfitBuckets($buckets);
+        return self::formatDailyProfitReport($buckets, $start, $end, $groupBy);
     }
 
     public static function canBuildMonthlyWorkSummary(): bool
@@ -737,32 +747,166 @@ final class DashboardMetrics
     }
 
     /**
-     * @param  array<string, array{date: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private static function dailyProfitPeriod(CarbonInterface|string|null $dateFrom, CarbonInterface|string|null $dateTo): array
+    {
+        $defaultEnd = CarbonImmutable::now()->subDays(self::DAILY_PROFIT_CLOSED_DELAY_DAYS)->startOfDay();
+        $defaultStart = $defaultEnd->subDays(29);
+        $start = self::parseDailyProfitDate($dateFrom, $defaultStart);
+        $end = self::parseDailyProfitDate($dateTo, $defaultEnd);
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        return [$start, $end];
+    }
+
+    private static function parseDailyProfitDate(CarbonInterface|string|null $date, CarbonImmutable $fallback): CarbonImmutable
+    {
+        if ($date instanceof CarbonInterface) {
+            return CarbonImmutable::instance($date)->startOfDay();
+        }
+
+        try {
+            $date = trim((string) $date);
+
+            return CarbonImmutable::parse($date !== '' ? $date : $fallback)->startOfDay();
+        } catch (Throwable) {
+            return $fallback;
+        }
+    }
+
+    /**
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     */
+    private static function fillDailyProfitBuckets(array &$buckets, CarbonImmutable $start, CarbonImmutable $end, string $groupBy): void
+    {
+        if ($groupBy === 'month') {
+            for ($month = $start->startOfMonth(); $month->lessThanOrEqualTo($end); $month = $month->addMonth()) {
+                $bucketStart = $month->greaterThan($start) ? $month : $start;
+                $bucketEnd = $month->endOfMonth()->lessThan($end) ? $month->endOfMonth() : $end;
+                $key = $month->format('Y-m');
+
+                $buckets[$key] = self::emptyDailyProfitBucket(
+                    key: $key,
+                    label: $month->format('m.Y'),
+                    start: $bucketStart,
+                    end: $bucketEnd,
+                );
+            }
+
+            return;
+        }
+
+        for ($date = $start; $date->lessThanOrEqualTo($end); $date = $date->addDay()) {
+            $key = $date->toDateString();
+            $buckets[$key] = self::emptyDailyProfitBucket(
+                key: $key,
+                label: $date->format('d.m'),
+                start: $date,
+                end: $date,
+            );
+        }
+    }
+
+    /**
+     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}
+     */
+    private static function emptyDailyProfitBucket(string $key, string $label, CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'date_from' => $start->toDateString(),
+            'date_to' => $end->toDateString(),
+            'revenue' => 0.0,
+            'fuel_expense' => 0.0,
+            'landfill_expense' => 0.0,
+            'total_expense' => 0.0,
+            'profit' => 0.0,
+        ];
+    }
+
+    /**
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     */
+    private static function addDailyProfitBucketValue(array &$buckets, string $date, string $column, float $value): void
+    {
+        $date = CarbonImmutable::parse($date);
+
+        foreach ($buckets as &$bucket) {
+            if ($date->betweenIncluded($bucket['date_from'], $bucket['date_to'])) {
+                $bucket[$column] += $value;
+
+                return;
+            }
+        }
+        unset($bucket);
+    }
+
+    /**
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
      * @return array{
+     *     date_from: string,
+     *     date_to: string,
+     *     group_by: string,
      *     labels: array<int, string>,
      *     revenue: array<int, float>,
      *     fuel_expense: array<int, float>,
      *     landfill_expense: array<int, float>,
      *     total_expense: array<int, float>,
      *     profit: array<int, float>,
-     *     rows: array<int, array{date: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>
+     *     rows: array<int, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string}>,
+     *     totals: array{label: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string},
+     *     has_data: bool
      * }
      */
-    private static function formatDailyProfitBuckets(array $buckets): array
+    private static function formatDailyProfitReport(array $buckets, CarbonImmutable $start, CarbonImmutable $end, string $groupBy): array
     {
-        $rows = array_values($buckets);
+        $rows = array_map(self::formatDailyProfitRow(...), array_values($buckets));
+        $totals = self::formatDailyProfitRow([
+            'key' => 'total',
+            'label' => 'Итого',
+            'date_from' => $start->toDateString(),
+            'date_to' => $end->toDateString(),
+            'revenue' => array_sum(array_column($rows, 'revenue')),
+            'fuel_expense' => array_sum(array_column($rows, 'fuel_expense')),
+            'landfill_expense' => array_sum(array_column($rows, 'landfill_expense')),
+            'total_expense' => array_sum(array_column($rows, 'total_expense')),
+            'profit' => array_sum(array_column($rows, 'profit')),
+        ]);
 
         return [
-            'labels' => array_map(
-                fn (array $row): string => CarbonImmutable::parse($row['date'])->format('d.m'),
-                $rows,
-            ),
+            'date_from' => $start->toDateString(),
+            'date_to' => $end->toDateString(),
+            'group_by' => $groupBy,
+            'labels' => array_column($rows, 'label'),
             'revenue' => array_column($rows, 'revenue'),
             'fuel_expense' => array_column($rows, 'fuel_expense'),
             'landfill_expense' => array_column($rows, 'landfill_expense'),
             'total_expense' => array_column($rows, 'total_expense'),
             'profit' => array_column($rows, 'profit'),
             'rows' => $rows,
+            'totals' => $totals,
+            'has_data' => $totals['revenue'] !== 0.0 || $totals['total_expense'] !== 0.0,
+        ];
+    }
+
+    /**
+     * @param  array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}  $row
+     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string}
+     */
+    private static function formatDailyProfitRow(array $row): array
+    {
+        return [
+            ...$row,
+            'revenue_formatted' => self::formatSummaryMoney($row['revenue']),
+            'fuel_expense_formatted' => self::formatSummaryMoney($row['fuel_expense']),
+            'landfill_expense_formatted' => self::formatSummaryMoney($row['landfill_expense']),
+            'total_expense_formatted' => self::formatSummaryMoney($row['total_expense']),
+            'profit_formatted' => self::formatSummaryMoney($row['profit']),
         ];
     }
 

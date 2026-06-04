@@ -72,6 +72,31 @@ class DashboardMetricsDailyProfitTest extends TestCase
         $this->assertSame([25000.0, 5000.0], $profit['profit']);
     }
 
+    public function test_daily_profit_report_groups_by_month(): void
+    {
+        DB::table('works')->insert([
+            ['date' => '2026-05-31', 'revenue' => 10000],
+            ['date' => '2026-06-01', 'revenue' => 50000],
+            ['date' => '2026-06-02', 'revenue' => 20000],
+        ]);
+
+        DB::table('daily_expense_allocations')->insert([
+            ['expense_date' => '2026-05-31', 'expense_code' => '185', 'amount' => 2000],
+            ['expense_date' => '2026-06-01', 'expense_code' => '183', 'amount' => 15000],
+            ['expense_date' => '2026-06-02', 'expense_code' => '183', 'amount' => 15000],
+            ['expense_date' => '2026-06-02', 'expense_code' => '185', 'amount' => 10000],
+        ]);
+
+        $report = DashboardMetrics::dailyProfitReport('2026-05-01', '2026-06-30', 'month');
+
+        $this->assertSame(['05.2026', '06.2026'], $report['labels']);
+        $this->assertSame([10000.0, 70000.0], $report['revenue']);
+        $this->assertSame([0.0, 30000.0], $report['fuel_expense']);
+        $this->assertSame([2000.0, 10000.0], $report['landfill_expense']);
+        $this->assertSame([8000.0, 30000.0], $report['profit']);
+        $this->assertSame(38000.0, $report['totals']['profit']);
+    }
+
     private function resetDashboardMetricsCache(): void
     {
         $reflection = new ReflectionClass(DashboardMetrics::class);

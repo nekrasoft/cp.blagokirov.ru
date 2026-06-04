@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256:build-source-files-normalized:v2",
-  "fingerprint": "0dbe48f759b47dd22daacb43ff3b1e327a9cab1b5b25b0aadbb1855158404fed",
+  "fingerprint": "c074760f3dc501d9de55e1500f43a4a73105e886783e00a1b88ff0d26c72b198",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",
     "app/Filament/Auth/CounterpartyLogin.php",
@@ -19,6 +19,7 @@
     "app/Filament/Dashboard/Widgets/RecentFillRequestsTable.php",
     "app/Filament/Dashboard/Widgets/RevenueByMonthChart.php",
     "app/Filament/Dashboard/Widgets/UnpaidInvoicesTable.php",
+    "app/Filament/Pages/DailyProfitReportPage.php",
     "app/Filament/Pages/DriverWorkTimeSummaryPage.php",
     "app/Filament/Pages/MonthlyWorkSummaryPage.php",
     "app/Filament/Resources/BunkerFillRequestResource.php",
@@ -72,6 +73,7 @@
     "resources/views/filament/counterparty/pages/feedback-page.blade.php",
     "resources/views/filament/dashboard/partials/monthly-work-summary-table.blade.php",
     "resources/views/filament/dashboard/widgets/monthly-work-summary-widget.blade.php",
+    "resources/views/filament/pages/daily-profit-report-page.blade.php",
     "resources/views/filament/pages/driver-work-time-summary-page.blade.php",
     "resources/views/filament/pages/monthly-work-summary-page.blade.php",
     "resources/views/filament/tailadmin/navigation-search-sync.blade.php",
