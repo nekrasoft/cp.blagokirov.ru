@@ -16,6 +16,8 @@ use Throwable;
 
 final class DashboardMetrics
 {
+    public const STALE_BUNKER_PICKUP_DAYS = 14;
+
     private const BUNKER_FILL_BUCKET_LABELS = ['0-49%', '50-69%', '70-99%', '100%'];
 
     private const BUNKER_FILL_BUCKET_CHART_COLORS = [
@@ -164,6 +166,38 @@ final class DashboardMetrics
         $query->where('counterparty_id', $counterpartyId);
 
         return self::applyDistrictScopeToFillRequestsQuery($query, $counterpartyUser);
+    }
+
+    public static function staleBunkersQuery(?CounterpartyUser $counterpartyUser = null): ?Builder
+    {
+        $query = self::bunkersQuery($counterpartyUser);
+
+        if (! $query || ! self::canBuildStaleBunkersReport()) {
+            return $query?->whereRaw('1 = 0');
+        }
+
+        return self::applyStaleBunkerPickupScope($query);
+    }
+
+    public static function canBuildStaleBunkersReport(): bool
+    {
+        return self::hasColumn('bunkers', 'id')
+            && self::hasColumns('bunker_fill_requests', ['bunker_id', 'executed_at']);
+    }
+
+    public static function applyStaleBunkerPickupScope(Builder $query): Builder
+    {
+        $cutoff = CarbonImmutable::now()
+            ->subDays(self::STALE_BUNKER_PICKUP_DAYS)
+            ->toDateTimeString();
+
+        return $query->whereNotExists(function ($subquery) use ($cutoff): void {
+            $subquery
+                ->selectRaw('1')
+                ->from('bunker_fill_requests')
+                ->whereColumn('bunker_fill_requests.bunker_id', 'bunkers.id')
+                ->where('bunker_fill_requests.executed_at', '>=', $cutoff);
+        });
     }
 
     public static function invoicesQuery(?CounterpartyUser $counterpartyUser = null): ?Builder

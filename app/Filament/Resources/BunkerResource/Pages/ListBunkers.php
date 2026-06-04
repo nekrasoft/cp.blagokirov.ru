@@ -22,10 +22,14 @@ class ListBunkers extends ListRecords
         ];
 
         if (! DashboardMetrics::hasColumns('bunkers', ['fill_level'])) {
+            if (DashboardMetrics::canBuildStaleBunkersReport()) {
+                $tabs['stale_pickup'] = $this->stalePickupTab();
+            }
+
             return $tabs;
         }
 
-        return [
+        $tabs = [
             ...$tabs,
             'attention' => Tab::make('70%+')
                 ->icon('heroicon-m-exclamation-triangle')
@@ -49,6 +53,21 @@ class ListBunkers extends ListRecords
                 ->badgeColor('success')
                 ->query(fn (Builder $query): Builder => $query->where('fill_level', '<', 70)),
         ];
+
+        if (DashboardMetrics::canBuildStaleBunkersReport()) {
+            $tabs['stale_pickup'] = $this->stalePickupTab();
+        }
+
+        return $tabs;
+    }
+
+    private function stalePickupTab(): Tab
+    {
+        return Tab::make('Без вывоза 14д')
+            ->icon('heroicon-m-clock')
+            ->badge(fn (): int => DashboardMetrics::safeCount(DashboardMetrics::staleBunkersQuery()))
+            ->badgeColor('danger')
+            ->query(fn (Builder $query): Builder => DashboardMetrics::applyStaleBunkerPickupScope($query));
     }
 
     protected function getHeaderActions(): array
