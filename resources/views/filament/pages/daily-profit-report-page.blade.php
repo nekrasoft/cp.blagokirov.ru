@@ -98,6 +98,10 @@
                         <th scope="col" class="px-4 py-3 text-right">Полигоны</th>
                         <th scope="col" class="px-4 py-3 text-right">Расходы</th>
                         <th scope="col" class="px-4 py-3 text-right">Прибыль</th>
+                        @if ($report['group_by'] === 'month')
+                            <th scope="col" class="px-4 py-3 text-right">Рабочие дни</th>
+                            <th scope="col" class="px-4 py-3 text-right">Прибыль/день</th>
+                        @endif
                     </tr>
                 </thead>
 
@@ -118,10 +122,14 @@
                             ])>
                                 {{ $row['profit_formatted'] }}
                             </td>
+                            @if ($report['group_by'] === 'month')
+                                <td class="px-4 py-3 text-right tabular-nums">{{ $row['work_days'] }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums">{{ $row['avg_profit_per_work_day_formatted'] }}</td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="{{ $report['group_by'] === 'month' ? 8 : 6 }}" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Нет данных за выбранный период.
                             </td>
                         </tr>
@@ -137,6 +145,10 @@
                             <td class="px-4 py-3 text-right tabular-nums">{{ $report['totals']['landfill_expense_formatted'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums">{{ $report['totals']['total_expense_formatted'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums">{{ $report['totals']['profit_formatted'] }}</td>
+                            @if ($report['group_by'] === 'month')
+                                <td class="px-4 py-3 text-right tabular-nums">{{ $report['totals']['work_days'] }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums">{{ $report['totals']['avg_profit_per_work_day_formatted'] }}</td>
+                            @endif
                         </tr>
                     </tfoot>
                 @endif

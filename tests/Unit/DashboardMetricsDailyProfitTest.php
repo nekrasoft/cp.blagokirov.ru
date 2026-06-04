@@ -18,6 +18,7 @@ class DashboardMetricsDailyProfitTest extends TestCase
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-04 12:00:00'));
         $this->resetDashboardMetricsCache();
         Schema::dropIfExists('daily_expense_allocations');
+        Schema::dropIfExists('driver_work_time');
         Schema::dropIfExists('works');
 
         Schema::create('works', function ($table): void {
@@ -33,6 +34,11 @@ class DashboardMetricsDailyProfitTest extends TestCase
             $table->decimal('amount', 14, 2);
         });
 
+        Schema::create('driver_work_time', function ($table): void {
+            $table->id();
+            $table->date('work_date');
+        });
+
         $this->resetDashboardMetricsCache();
     }
 
@@ -40,6 +46,7 @@ class DashboardMetricsDailyProfitTest extends TestCase
     {
         CarbonImmutable::setTestNow();
         Schema::dropIfExists('daily_expense_allocations');
+        Schema::dropIfExists('driver_work_time');
         Schema::dropIfExists('works');
         $this->resetDashboardMetricsCache();
 
@@ -87,6 +94,13 @@ class DashboardMetricsDailyProfitTest extends TestCase
             ['expense_date' => '2026-06-02', 'expense_code' => '185', 'amount' => 10000],
         ]);
 
+        DB::table('driver_work_time')->insert([
+            ['work_date' => '2026-05-31'],
+            ['work_date' => '2026-06-01'],
+            ['work_date' => '2026-06-01'],
+            ['work_date' => '2026-06-02'],
+        ]);
+
         $report = DashboardMetrics::dailyProfitReport('2026-05-01', '2026-06-30', 'month');
 
         $this->assertSame(['05.2026', '06.2026'], $report['labels']);
@@ -94,7 +108,11 @@ class DashboardMetricsDailyProfitTest extends TestCase
         $this->assertSame([0.0, 30000.0], $report['fuel_expense']);
         $this->assertSame([2000.0, 10000.0], $report['landfill_expense']);
         $this->assertSame([8000.0, 30000.0], $report['profit']);
+        $this->assertSame([1, 2], array_column($report['rows'], 'work_days'));
+        $this->assertSame([8000.0, 15000.0], array_column($report['rows'], 'avg_profit_per_work_day'));
         $this->assertSame(38000.0, $report['totals']['profit']);
+        $this->assertSame(3, $report['totals']['work_days']);
+        $this->assertEqualsWithDelta(12666.67, $report['totals']['avg_profit_per_work_day'], 0.01);
     }
 
     private function resetDashboardMetricsCache(): void

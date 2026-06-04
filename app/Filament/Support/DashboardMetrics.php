@@ -542,6 +542,10 @@ final class DashboardMetrics
         }
         unset($bucket);
 
+        if ($groupBy === 'month') {
+            self::addDailyProfitWorkDays($buckets, $start, $end);
+        }
+
         return self::formatDailyProfitReport($buckets, $start, $end, $groupBy);
     }
 
@@ -779,7 +783,7 @@ final class DashboardMetrics
     }
 
     /**
-     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}>  $buckets
      */
     private static function fillDailyProfitBuckets(array &$buckets, CarbonImmutable $start, CarbonImmutable $end, string $groupBy): void
     {
@@ -812,7 +816,7 @@ final class DashboardMetrics
     }
 
     /**
-     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}
+     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}
      */
     private static function emptyDailyProfitBucket(string $key, string $label, CarbonImmutable $start, CarbonImmutable $end): array
     {
@@ -826,11 +830,13 @@ final class DashboardMetrics
             'landfill_expense' => 0.0,
             'total_expense' => 0.0,
             'profit' => 0.0,
+            'work_days' => 0,
+            'avg_profit_per_work_day' => 0.0,
         ];
     }
 
     /**
-     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}>  $buckets
      */
     private static function addDailyProfitBucketValue(array &$buckets, string $date, string $column, float $value): void
     {
@@ -847,7 +853,45 @@ final class DashboardMetrics
     }
 
     /**
-     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}>  $buckets
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}>  $buckets
+     */
+    private static function addDailyProfitWorkDays(array &$buckets, CarbonImmutable $start, CarbonImmutable $end): void
+    {
+        if (! self::hasColumn('driver_work_time', 'work_date')) {
+            return;
+        }
+
+        try {
+            DB::table('driver_work_time')
+                ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
+                ->distinct()
+                ->pluck('work_date')
+                ->each(function ($workDate) use (&$buckets): void {
+                    $date = CarbonImmutable::parse($workDate);
+
+                    foreach ($buckets as &$bucket) {
+                        if ($date->betweenIncluded($bucket['date_from'], $bucket['date_to'])) {
+                            $bucket['work_days']++;
+
+                            return;
+                        }
+                    }
+                    unset($bucket);
+                });
+        } catch (Throwable) {
+            //
+        }
+
+        foreach ($buckets as &$bucket) {
+            $bucket['avg_profit_per_work_day'] = $bucket['work_days'] > 0
+                ? $bucket['profit'] / $bucket['work_days']
+                : 0.0;
+        }
+        unset($bucket);
+    }
+
+    /**
+     * @param  array<string, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}>  $buckets
      * @return array{
      *     date_from: string,
      *     date_to: string,
@@ -858,8 +902,8 @@ final class DashboardMetrics
      *     landfill_expense: array<int, float>,
      *     total_expense: array<int, float>,
      *     profit: array<int, float>,
-     *     rows: array<int, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string}>,
-     *     totals: array{label: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string},
+     *     rows: array<int, array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string, avg_profit_per_work_day_formatted: string}>,
+     *     totals: array{label: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string, avg_profit_per_work_day_formatted: string},
      *     has_data: bool
      * }
      */
@@ -876,7 +920,13 @@ final class DashboardMetrics
             'landfill_expense' => array_sum(array_column($rows, 'landfill_expense')),
             'total_expense' => array_sum(array_column($rows, 'total_expense')),
             'profit' => array_sum(array_column($rows, 'profit')),
+            'work_days' => array_sum(array_column($rows, 'work_days')),
+            'avg_profit_per_work_day' => 0.0,
         ]);
+        $totals['avg_profit_per_work_day'] = $totals['work_days'] > 0
+            ? $totals['profit'] / $totals['work_days']
+            : 0.0;
+        $totals['avg_profit_per_work_day_formatted'] = self::formatSummaryMoney($totals['avg_profit_per_work_day']);
 
         return [
             'date_from' => $start->toDateString(),
@@ -895,8 +945,8 @@ final class DashboardMetrics
     }
 
     /**
-     * @param  array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float}  $row
-     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string}
+     * @param  array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float}  $row
+     * @return array{key: string, label: string, date_from: string, date_to: string, revenue: float, fuel_expense: float, landfill_expense: float, total_expense: float, profit: float, work_days: int, avg_profit_per_work_day: float, revenue_formatted: string, fuel_expense_formatted: string, landfill_expense_formatted: string, total_expense_formatted: string, profit_formatted: string, avg_profit_per_work_day_formatted: string}
      */
     private static function formatDailyProfitRow(array $row): array
     {
@@ -907,6 +957,7 @@ final class DashboardMetrics
             'landfill_expense_formatted' => self::formatSummaryMoney($row['landfill_expense']),
             'total_expense_formatted' => self::formatSummaryMoney($row['total_expense']),
             'profit_formatted' => self::formatSummaryMoney($row['profit']),
+            'avg_profit_per_work_day_formatted' => self::formatSummaryMoney($row['avg_profit_per_work_day']),
         ];
     }
 
