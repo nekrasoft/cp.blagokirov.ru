@@ -20,6 +20,7 @@ final class DashboardMetrics
     public const STALE_BUNKER_PICKUP_DAYS = 14;
     public const DAILY_PROFIT_CLOSED_DELAY_DAYS = 2;
 
+    private const DAILY_PROFIT_PAST_MONTH_MIN_WORK_DAYS = 25;
     private const PROFIT_FUEL_EXPENSE_CODE = '183';
     private const PROFIT_LANDFILL_EXPENSE_CODE = '185';
 
@@ -882,7 +883,14 @@ final class DashboardMetrics
             //
         }
 
+        $currentMonthStart = CarbonImmutable::now()->startOfMonth();
+
         foreach ($buckets as &$bucket) {
+            if (CarbonImmutable::parse($bucket['date_to'])->lessThan($currentMonthStart)
+                && $bucket['work_days'] < self::DAILY_PROFIT_PAST_MONTH_MIN_WORK_DAYS) {
+                $bucket['work_days'] = self::DAILY_PROFIT_PAST_MONTH_MIN_WORK_DAYS;
+            }
+
             $bucket['avg_profit_per_work_day'] = $bucket['work_days'] > 0
                 ? $bucket['profit'] / $bucket['work_days']
                 : 0.0;

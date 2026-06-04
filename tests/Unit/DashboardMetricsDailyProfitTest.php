@@ -108,11 +108,11 @@ class DashboardMetricsDailyProfitTest extends TestCase
         $this->assertSame([0.0, 30000.0], $report['fuel_expense']);
         $this->assertSame([2000.0, 10000.0], $report['landfill_expense']);
         $this->assertSame([8000.0, 30000.0], $report['profit']);
-        $this->assertSame([1, 2], array_column($report['rows'], 'work_days'));
-        $this->assertSame([8000.0, 15000.0], array_column($report['rows'], 'avg_profit_per_work_day'));
+        $this->assertSame([25, 2], array_column($report['rows'], 'work_days'));
+        $this->assertSame([320.0, 15000.0], array_column($report['rows'], 'avg_profit_per_work_day'));
         $this->assertSame(38000.0, $report['totals']['profit']);
-        $this->assertSame(3, $report['totals']['work_days']);
-        $this->assertEqualsWithDelta(12666.67, $report['totals']['avg_profit_per_work_day'], 0.01);
+        $this->assertSame(27, $report['totals']['work_days']);
+        $this->assertEqualsWithDelta(1407.41, $report['totals']['avg_profit_per_work_day'], 0.01);
     }
 
     private function resetDashboardMetricsCache(): void
