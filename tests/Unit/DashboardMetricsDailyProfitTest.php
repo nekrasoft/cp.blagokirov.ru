@@ -59,6 +59,7 @@ class DashboardMetricsDailyProfitTest extends TestCase
             ['date' => '2026-06-01', 'revenue' => 50000],
             ['date' => '2026-06-02', 'revenue' => 20000],
             ['date' => '2026-06-03', 'revenue' => 999999],
+            ['date' => '2026-06-04', 'revenue' => 777777],
         ]);
 
         DB::table('daily_expense_allocations')->insert([
@@ -67,16 +68,17 @@ class DashboardMetricsDailyProfitTest extends TestCase
             ['expense_date' => '2026-06-02', 'expense_code' => '183', 'amount' => 15000],
             ['expense_date' => '2026-06-02', 'expense_code' => '182', 'amount' => 7000],
             ['expense_date' => '2026-06-03', 'expense_code' => '185', 'amount' => 999999],
+            ['expense_date' => '2026-06-04', 'expense_code' => '185', 'amount' => 777777],
         ]);
 
         $profit = DashboardMetrics::dailyProfitByDay(2);
 
-        $this->assertSame(['01.06', '02.06'], $profit['labels']);
-        $this->assertSame([50000.0, 20000.0], $profit['revenue']);
-        $this->assertSame([15000.0, 15000.0], $profit['fuel_expense']);
-        $this->assertSame([10000.0, 0.0], $profit['landfill_expense']);
-        $this->assertSame([25000.0, 15000.0], $profit['total_expense']);
-        $this->assertSame([25000.0, 5000.0], $profit['profit']);
+        $this->assertSame(['02.06', '03.06'], $profit['labels']);
+        $this->assertSame([20000.0, 999999.0], $profit['revenue']);
+        $this->assertSame([15000.0, 0.0], $profit['fuel_expense']);
+        $this->assertSame([0.0, 999999.0], $profit['landfill_expense']);
+        $this->assertSame([15000.0, 999999.0], $profit['total_expense']);
+        $this->assertSame([5000.0, 0.0], $profit['profit']);
     }
 
     public function test_daily_profit_report_groups_by_month(): void

@@ -18,7 +18,7 @@ use Throwable;
 final class DashboardMetrics
 {
     public const STALE_BUNKER_PICKUP_DAYS = 14;
-    public const DAILY_PROFIT_CLOSED_DELAY_DAYS = 2;
+    public const DAILY_PROFIT_CLOSED_DELAY_DAYS = 1;
 
     private const DAILY_PROFIT_PAST_MONTH_MIN_WORK_DAYS = 25;
     private const PROFIT_FUEL_EXPENSE_CODE = '183';
