@@ -56,14 +56,6 @@ class AdminOverviewStats extends StatsOverviewWidget
         $unpaidRevenue = DashboardMetrics::unpaidWorksRevenue();
 
         return [
-            Stat::make('Бункеры', DashboardMetrics::formatInteger($bunkersCount))
-                ->description($attentionBunkersCount.' требуют внимания, '.$fullBunkersCount.' заполнены на 100%')
-                ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
-                ->color($attentionBunkersCount > 0 ? 'warning' : 'success')
-                ->icon(Heroicon::OutlinedMapPin)
-                ->chart($bunkerBuckets)
-                ->url(DashboardMetrics::hasTable('bunkers') ? BunkerResource::getUrl('index') : null),
-
             Stat::make('Заявки сегодня', DashboardMetrics::formatInteger($requestsTodayCount))
                 ->description('Динамика за последние 7 дней')
                 ->descriptionIcon(Heroicon::OutlinedArrowTrendingUp)
@@ -71,6 +63,17 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->icon(Heroicon::OutlinedClipboardDocumentList)
                 ->chart($requestsTrend)
                 ->url(DashboardMetrics::hasTable('bunker_fill_requests') ? BunkerFillRequestResource::getUrl('index') : null),
+
+            Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))
+                ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($currentMonthProfitTotals['avg_profit_per_work_day']))
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
+                ->color($currentMonthProfitTotals['profit'] >= 0 ? 'success' : 'danger')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->url(DashboardMetrics::canBuildDailyProfit() && $hasClosedCurrentMonthDays ? DailyProfitReportPage::getUrl([
+                    'date_from' => $currentMonthStart->toDateString(),
+                    'date_to' => $closedTo->toDateString(),
+                    'group_by' => 'month',
+                ]) : null),
 
             Stat::make('Неоплаченные счета', DashboardMetrics::formatInteger($unpaidInvoicesCount))
                 ->description('Работ на сумму '.DashboardMetrics::formatMoney($unpaidRevenue))
@@ -95,16 +98,13 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->chart($revenueTrend)
                 ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index') : null),
 
-            Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))
-                ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($currentMonthProfitTotals['avg_profit_per_work_day']))
-                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
-                ->color($currentMonthProfitTotals['profit'] >= 0 ? 'success' : 'danger')
-                ->icon(Heroicon::OutlinedBanknotes)
-                ->url(DashboardMetrics::canBuildDailyProfit() && $hasClosedCurrentMonthDays ? DailyProfitReportPage::getUrl([
-                    'date_from' => $currentMonthStart->toDateString(),
-                    'date_to' => $closedTo->toDateString(),
-                    'group_by' => 'month',
-                ]) : null),
+            Stat::make('Бункеры', DashboardMetrics::formatInteger($bunkersCount))
+                ->description($attentionBunkersCount.' требуют внимания, '.$fullBunkersCount.' заполнены на 100%')
+                ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
+                ->color($attentionBunkersCount > 0 ? 'warning' : 'success')
+                ->icon(Heroicon::OutlinedMapPin)
+                ->chart($bunkerBuckets)
+                ->url(DashboardMetrics::hasTable('bunkers') ? BunkerResource::getUrl('index') : null),
         ];
     }
 }
