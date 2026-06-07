@@ -40,6 +40,9 @@ class AdminOverviewStats extends StatsOverviewWidget
         $currentMonthProfitTotals = $hasClosedCurrentMonthDays
             ? DashboardMetrics::dailyProfitReport($currentMonthStart, $closedTo, 'month')['totals']
             : ['profit' => 0.0, 'avg_profit_per_work_day' => 0.0];
+        $previousMonthStart = $now->copy()->subMonthNoOverflow()->startOfMonth();
+        $previousMonthEnd = $previousMonthStart->copy()->endOfMonth();
+        $previousMonthProfitTotals = DashboardMetrics::dailyProfitReport($previousMonthStart, $previousMonthEnd, 'month')['totals'];
 
         $bunkersCount = DashboardMetrics::safeCount(DashboardMetrics::bunkersQuery());
         $attentionBunkersCount = DashboardMetrics::safeCount(
@@ -75,6 +78,17 @@ class AdminOverviewStats extends StatsOverviewWidget
                     'group_by' => 'month',
                 ]) : null),
 
+            Stat::make('Прибыль прошлого месяца', DashboardMetrics::formatMoney($previousMonthProfitTotals['profit']))
+                ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($previousMonthProfitTotals['avg_profit_per_work_day']))
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
+                ->color($previousMonthProfitTotals['profit'] >= 0 ? 'success' : 'danger')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->url(DashboardMetrics::canBuildDailyProfit() ? DailyProfitReportPage::getUrl([
+                    'date_from' => $previousMonthStart->toDateString(),
+                    'date_to' => $previousMonthEnd->toDateString(),
+                    'group_by' => 'month',
+                ]) : null),
+
             Stat::make('Неоплаченные счета', DashboardMetrics::formatInteger($unpaidInvoicesCount))
                 ->description('Работ на сумму '.DashboardMetrics::formatMoney($unpaidRevenue))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)
@@ -83,20 +97,13 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->chart($revenueTrend)
                 ->url(DashboardMetrics::hasTable('invoices') ? InvoiceResource::getUrl('index', ['tab' => 'unpaid']) : null),
 
-            Stat::make('Работы без счета', DashboardMetrics::formatInteger($unbilledWorksCount))
-                ->description('Нужно проверить привязку к счетам')
-                ->descriptionIcon(Heroicon::OutlinedLink)
-                ->color($unbilledWorksCount > 0 ? 'warning' : 'success')
-                ->icon(Heroicon::OutlinedBriefcase)
-                ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index', ['tab' => 'unbilled']) : null),
-
-            Stat::make('Выручка за 6 мес.', DashboardMetrics::formatMoney(array_sum($revenueTrend)))
-                ->description('По загруженным работам')
-                ->descriptionIcon(Heroicon::OutlinedChartBar)
-                ->color('primary')
-                ->icon(Heroicon::OutlinedPresentationChartLine)
-                ->chart($revenueTrend)
-                ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index') : null),
+            // Stat::make('Выручка за 6 мес.', DashboardMetrics::formatMoney(array_sum($revenueTrend)))
+            //     ->description('По загруженным работам')
+            //     ->descriptionIcon(Heroicon::OutlinedChartBar)
+            //     ->color('primary')
+            //     ->icon(Heroicon::OutlinedPresentationChartLine)
+            //     ->chart($revenueTrend)
+            //     ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index') : null),
 
             Stat::make('Бункеры', DashboardMetrics::formatInteger($bunkersCount))
                 ->description($attentionBunkersCount.' требуют внимания, '.$fullBunkersCount.' заполнены на 100%')
@@ -105,6 +112,14 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->icon(Heroicon::OutlinedMapPin)
                 ->chart($bunkerBuckets)
                 ->url(DashboardMetrics::hasTable('bunkers') ? BunkerResource::getUrl('index') : null),
+
+            Stat::make('Работы без счета', DashboardMetrics::formatInteger($unbilledWorksCount))
+                ->description('Нужно проверить привязку к счетам')
+                ->descriptionIcon(Heroicon::OutlinedLink)
+                ->color($unbilledWorksCount > 0 ? 'warning' : 'success')
+                ->icon(Heroicon::OutlinedBriefcase)
+                ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index', ['tab' => 'unbilled']) : null),
+
         ];
     }
 }
