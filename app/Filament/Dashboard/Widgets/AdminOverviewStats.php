@@ -2,6 +2,7 @@
 
 namespace App\Filament\Dashboard\Widgets;
 
+use App\Filament\Pages\DailyProfitReportPage;
 use App\Filament\Resources\BunkerFillRequestResource;
 use App\Filament\Resources\BunkerResource;
 use App\Filament\Resources\InvoiceResource;
@@ -10,7 +11,6 @@ use App\Filament\Support\DashboardMetrics;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 class AdminOverviewStats extends StatsOverviewWidget
 {
@@ -31,6 +31,15 @@ class AdminOverviewStats extends StatsOverviewWidget
         $requestsTrend = DashboardMetrics::fillRequestsTrend(7)['data'];
         $revenueTrend = DashboardMetrics::revenueByMonth(6)['data'];
         $bunkerBuckets = DashboardMetrics::bunkerFillBuckets()['data'];
+        $now = now();
+        $closedTo = $now->copy()
+            ->subDays(DashboardMetrics::DAILY_PROFIT_CLOSED_DELAY_DAYS)
+            ->startOfDay();
+        $currentMonthStart = $now->copy()->startOfMonth();
+        $hasClosedCurrentMonthDays = ! $closedTo->lessThan($currentMonthStart);
+        $currentMonthProfitTotals = $hasClosedCurrentMonthDays
+            ? DashboardMetrics::dailyProfitReport($currentMonthStart, $closedTo, 'month')['totals']
+            : ['profit' => 0.0, 'avg_profit_per_work_day' => 0.0];
 
         $bunkersCount = DashboardMetrics::safeCount(DashboardMetrics::bunkersQuery());
         $attentionBunkersCount = DashboardMetrics::safeCount(
@@ -48,7 +57,7 @@ class AdminOverviewStats extends StatsOverviewWidget
 
         return [
             Stat::make('Бункеры', DashboardMetrics::formatInteger($bunkersCount))
-                ->description($attentionBunkersCount . ' требуют внимания, ' . $fullBunkersCount . ' заполнены на 100%')
+                ->description($attentionBunkersCount.' требуют внимания, '.$fullBunkersCount.' заполнены на 100%')
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($attentionBunkersCount > 0 ? 'warning' : 'success')
                 ->icon(Heroicon::OutlinedMapPin)
@@ -64,7 +73,7 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->url(DashboardMetrics::hasTable('bunker_fill_requests') ? BunkerFillRequestResource::getUrl('index') : null),
 
             Stat::make('Неоплаченные счета', DashboardMetrics::formatInteger($unpaidInvoicesCount))
-                ->description('Работ на сумму ' . DashboardMetrics::formatMoney($unpaidRevenue))
+                ->description('Работ на сумму '.DashboardMetrics::formatMoney($unpaidRevenue))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)
                 ->color($unpaidInvoicesCount > 0 ? 'danger' : 'success')
                 ->icon(Heroicon::OutlinedDocumentText)
@@ -86,42 +95,16 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->chart($revenueTrend)
                 ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index') : null),
 
-            Stat::make('Активных контрагентов', DashboardMetrics::formatInteger($this->activeCounterpartiesCount()))
-                ->description('Контрагенты с бункерами, заявками или счетами')
-                ->descriptionIcon(Heroicon::OutlinedUsers)
-                ->color('gray')
-                ->icon(Heroicon::OutlinedBuildingOffice2),
+            Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))
+                ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($currentMonthProfitTotals['avg_profit_per_work_day']))
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
+                ->color($currentMonthProfitTotals['profit'] >= 0 ? 'success' : 'danger')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->url(DashboardMetrics::canBuildDailyProfit() && $hasClosedCurrentMonthDays ? DailyProfitReportPage::getUrl([
+                    'date_from' => $currentMonthStart->toDateString(),
+                    'date_to' => $closedTo->toDateString(),
+                    'group_by' => 'month',
+                ]) : null),
         ];
-    }
-
-    private function activeCounterpartiesCount(): int
-    {
-        $counterpartyIds = collect();
-
-        foreach ([
-            ['bunkers', DashboardMetrics::bunkersQuery()],
-            ['bunker_fill_requests', DashboardMetrics::fillRequestsQuery()],
-            ['invoices', DashboardMetrics::invoicesQuery()],
-        ] as [$table, $query]) {
-            if (! $query instanceof Builder || ! DashboardMetrics::hasColumn($table, 'counterparty_id')) {
-                continue;
-            }
-
-            try {
-                $counterpartyIds = $counterpartyIds->merge(
-                    $query
-                        ->whereNotNull('counterparty_id')
-                        ->distinct()
-                        ->pluck('counterparty_id'),
-                );
-            } catch (\Throwable) {
-                //
-            }
-        }
-
-        return $counterpartyIds
-            ->filter(fn ($id): bool => (int) $id > 0)
-            ->unique()
-            ->count();
     }
 }
