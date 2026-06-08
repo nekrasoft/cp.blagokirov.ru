@@ -73,13 +73,6 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->icon(Heroicon::OutlinedClipboardDocumentList)
                 ->url(DashboardMetrics::hasTable('bunker_fill_requests') ? BunkerFillRequestResource::getUrl('index') : null),
 
-            Stat::make('Загруженность машины', number_format($machineLoad['average_hours_per_machine'], 1, ',', ' ').' ч')
-                ->description('За текущий месяц, рабочих дней: '.$machineLoad['work_days'])
-                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
-                ->color($machineLoad['average_hours_per_machine'] > 0 ? 'primary' : 'gray')
-                ->icon(Heroicon::OutlinedCalculator)
-                ->chart($machineLoadTrend),
-
             Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))
                 ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($currentMonthProfitTotals['avg_profit_per_work_day']))
                 ->descriptionIcon(Heroicon::OutlinedCalendarDays)
@@ -102,13 +95,12 @@ class AdminOverviewStats extends StatsOverviewWidget
                     'group_by' => 'month',
                 ]) : null),
 
-            Stat::make('Неоплаченные счета', DashboardMetrics::formatInteger($unpaidInvoicesCount))
-                ->description('Работ на сумму '.DashboardMetrics::formatMoney($unpaidRevenue))
-                ->descriptionIcon(Heroicon::OutlinedBanknotes)
-                ->color($unpaidInvoicesCount > 0 ? 'danger' : 'success')
-                ->icon(Heroicon::OutlinedDocumentText)
-                ->chart($revenueTrend)
-                ->url(DashboardMetrics::hasTable('invoices') ? InvoiceResource::getUrl('index', ['tab' => 'unpaid']) : null),
+            Stat::make('Загруженность машины', number_format($machineLoad['average_hours_per_machine'], 1, ',', ' ').' ч')
+                ->description('За текущий месяц, рабочих дней: '.$machineLoad['work_days'])
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
+                ->color($machineLoad['average_hours_per_machine'] > 0 ? 'primary' : 'gray')
+                ->icon(Heroicon::OutlinedCalculator)
+                ->chart($machineLoadTrend),
 
             // Stat::make('Выручка за 6 мес.', DashboardMetrics::formatMoney(array_sum($revenueTrend)))
             //     ->description('По загруженным работам')
@@ -126,12 +118,20 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->chart($bunkerBuckets)
                 ->url(DashboardMetrics::hasTable('bunkers') ? BunkerResource::getUrl('index') : null),
 
-            Stat::make('Работы без счета', DashboardMetrics::formatInteger($unbilledWorksCount))
-                ->description('Нужно проверить привязку к счетам')
-                ->descriptionIcon(Heroicon::OutlinedLink)
-                ->color($unbilledWorksCount > 0 ? 'warning' : 'success')
-                ->icon(Heroicon::OutlinedBriefcase)
-                ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index', ['tab' => 'unbilled']) : null),
+            Stat::make('Неоплаченные счета', DashboardMetrics::formatInteger($unpaidInvoicesCount))
+                ->description('Работ на сумму '.DashboardMetrics::formatMoney($unpaidRevenue))
+                ->descriptionIcon(Heroicon::OutlinedBanknotes)
+                ->color($unpaidInvoicesCount > 0 ? 'danger' : 'success')
+                ->icon(Heroicon::OutlinedDocumentText)
+                ->chart($revenueTrend)
+                ->url(DashboardMetrics::hasTable('invoices') ? InvoiceResource::getUrl('index', ['tab' => 'unpaid']) : null),
+
+            // Stat::make('Работы без счета', DashboardMetrics::formatInteger($unbilledWorksCount))
+            //     ->description('Нужно проверить привязку к счетам')
+            //     ->descriptionIcon(Heroicon::OutlinedLink)
+            //     ->color($unbilledWorksCount > 0 ? 'warning' : 'success')
+            //     ->icon(Heroicon::OutlinedBriefcase)
+            //     ->url(DashboardMetrics::hasTable('works') ? WorkResource::getUrl('index', ['tab' => 'unbilled']) : null),
 
         ];
     }
