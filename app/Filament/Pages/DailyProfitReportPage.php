@@ -37,7 +37,7 @@ class DailyProfitReportPage extends Page
         $defaultTo = CarbonImmutable::now()
             ->subDays(DashboardMetrics::DAILY_PROFIT_CLOSED_DELAY_DAYS)
             ->toDateString();
-        $defaultFrom = CarbonImmutable::parse($defaultTo)->subDays(29)->toDateString();
+        $defaultFrom = CarbonImmutable::parse($defaultTo)->subDays(6)->toDateString();
 
         $this->dateFrom = $this->dateQueryValue('date_from', $defaultFrom);
         $this->dateTo = $this->dateQueryValue('date_to', $defaultTo);
@@ -91,7 +91,12 @@ class DailyProfitReportPage extends Page
     protected function getViewData(): array
     {
         return [
-            'report' => DashboardMetrics::dailyProfitReport($this->dateFrom, $this->dateTo, $this->groupBy),
+            'report' => DashboardMetrics::dailyProfitReport(
+                $this->dateFrom,
+                $this->dateTo,
+                $this->groupBy,
+                sortDaysDesc: $this->groupBy === 'day',
+            ),
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'groupBy' => $this->groupBy,
