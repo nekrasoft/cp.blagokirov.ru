@@ -37,7 +37,7 @@ class DailyProfitReportPage extends Page
         $defaultTo = CarbonImmutable::now()
             ->subDays(DashboardMetrics::DAILY_PROFIT_CLOSED_DELAY_DAYS)
             ->toDateString();
-        $defaultFrom = CarbonImmutable::parse($defaultTo)->subDays(6)->toDateString();
+        $defaultFrom = CarbonImmutable::parse($defaultTo)->startOfMonth()->toDateString();
 
         $this->dateFrom = $this->dateQueryValue('date_from', $defaultFrom);
         $this->dateTo = $this->dateQueryValue('date_to', $defaultTo);
@@ -52,34 +52,39 @@ class DailyProfitReportPage extends Page
     protected function getHeaderActions(): array
     {
         $closedTo = CarbonImmutable::now()->subDays(DashboardMetrics::DAILY_PROFIT_CLOSED_DELAY_DAYS);
+        $currentMonthFrom = $closedTo->startOfMonth()->toDateString();
+        $last30DaysFrom = $closedTo->subDays(29)->toDateString();
+        $monthsFrom = $closedTo->subMonths(5)->startOfMonth()->toDateString();
+        $closedToDate = $closedTo->toDateString();
 
         return [
-            Action::make('last30Days')
-                ->label('30 дней')
-                ->icon(Heroicon::OutlinedCalendarDays)
-                ->url(fn (): string => static::getUrl([
-                    'date_from' => $closedTo->subDays(29)->toDateString(),
-                    'date_to' => $closedTo->toDateString(),
-                    'group_by' => 'day',
-                ])),
-
             Action::make('currentMonth')
                 ->label('Текущий месяц')
                 ->icon(Heroicon::OutlinedCalendar)
-                ->color('gray')
+                ->color(fn (): string => $this->periodMatches($currentMonthFrom, $closedToDate, 'day') ? 'primary' : 'gray')
                 ->url(fn (): string => static::getUrl([
-                    'date_from' => $closedTo->startOfMonth()->toDateString(),
-                    'date_to' => $closedTo->toDateString(),
+                    'date_from' => $currentMonthFrom,
+                    'date_to' => $closedToDate,
+                    'group_by' => 'day',
+                ])),
+
+            Action::make('last30Days')
+                ->label('30 дней')
+                ->icon(Heroicon::OutlinedCalendarDays)
+                ->color(fn (): string => $this->periodMatches($last30DaysFrom, $closedToDate, 'day') ? 'primary' : 'gray')
+                ->url(fn (): string => static::getUrl([
+                    'date_from' => $last30DaysFrom,
+                    'date_to' => $closedToDate,
                     'group_by' => 'day',
                 ])),
 
             Action::make('months')
                 ->label('По месяцам')
                 ->icon(Heroicon::OutlinedChartBarSquare)
-                ->color('gray')
+                ->color(fn (): string => $this->periodMatches($monthsFrom, $closedToDate, 'month') ? 'primary' : 'gray')
                 ->url(fn (): string => static::getUrl([
-                    'date_from' => $closedTo->subMonths(5)->startOfMonth()->toDateString(),
-                    'date_to' => $closedTo->toDateString(),
+                    'date_from' => $monthsFrom,
+                    'date_to' => $closedToDate,
                     'group_by' => 'month',
                 ])),
         ];
@@ -91,12 +96,7 @@ class DailyProfitReportPage extends Page
     protected function getViewData(): array
     {
         return [
-            'report' => DashboardMetrics::dailyProfitReport(
-                $this->dateFrom,
-                $this->dateTo,
-                $this->groupBy,
-                sortDaysDesc: $this->groupBy === 'day',
-            ),
+            'report' => DashboardMetrics::dailyProfitReport($this->dateFrom, $this->dateTo, $this->groupBy),
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'groupBy' => $this->groupBy,
@@ -116,5 +116,12 @@ class DailyProfitReportPage extends Page
         }
 
         return $fallback;
+    }
+
+    private function periodMatches(string $dateFrom, string $dateTo, string $groupBy): bool
+    {
+        return $this->dateFrom === $dateFrom
+            && $this->dateTo === $dateTo
+            && $this->groupBy === $groupBy;
     }
 }

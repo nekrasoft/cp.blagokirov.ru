@@ -592,7 +592,6 @@ final class DashboardMetrics
         CarbonInterface|string|null $dateFrom = null,
         CarbonInterface|string|null $dateTo = null,
         string $groupBy = 'day',
-        bool $sortDaysDesc = false,
     ): array {
         $groupBy = $groupBy === 'month' ? 'month' : 'day';
         [$start, $end] = self::dailyProfitPeriod($dateFrom, $dateTo);
@@ -601,7 +600,7 @@ final class DashboardMetrics
         self::fillDailyProfitBuckets($buckets, $start, $end, $groupBy);
 
         if (! self::canBuildDailyProfit()) {
-            return self::formatDailyProfitReport($buckets, $start, $end, $groupBy, $sortDaysDesc);
+            return self::formatDailyProfitReport($buckets, $start, $end, $groupBy);
         }
 
         try {
@@ -646,7 +645,7 @@ final class DashboardMetrics
             self::addDailyProfitWorkDays($buckets, $start, $end);
         }
 
-        return self::formatDailyProfitReport($buckets, $start, $end, $groupBy, $sortDaysDesc);
+        return self::formatDailyProfitReport($buckets, $start, $end, $groupBy);
     }
 
     public static function canBuildMonthlyWorkSummary(): bool
@@ -856,7 +855,7 @@ final class DashboardMetrics
     private static function dailyProfitPeriod(CarbonInterface|string|null $dateFrom, CarbonInterface|string|null $dateTo): array
     {
         $defaultEnd = CarbonImmutable::now()->subDays(self::DAILY_PROFIT_CLOSED_DELAY_DAYS)->startOfDay();
-        $defaultStart = $defaultEnd->subDays(6);
+        $defaultStart = $defaultEnd->startOfMonth();
         $start = self::parseDailyProfitDate($dateFrom, $defaultStart);
         $end = self::parseDailyProfitDate($dateTo, $defaultEnd);
 
@@ -1012,13 +1011,8 @@ final class DashboardMetrics
         CarbonImmutable $start,
         CarbonImmutable $end,
         string $groupBy,
-        bool $sortDaysDesc = false,
     ): array {
         $rows = array_map(self::formatDailyProfitRow(...), array_values($buckets));
-
-        if ($sortDaysDesc && $groupBy === 'day') {
-            $rows = array_reverse($rows);
-        }
 
         $totals = self::formatDailyProfitRow([
             'key' => 'total',

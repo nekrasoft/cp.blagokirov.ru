@@ -117,13 +117,13 @@ class DashboardMetricsDailyProfitTest extends TestCase
         $this->assertEqualsWithDelta(1407.41, $report['totals']['avg_profit_per_work_day'], 0.01);
     }
 
-    public function test_daily_profit_report_defaults_to_last_seven_closed_days_and_can_sort_days_desc(): void
+    public function test_daily_profit_report_defaults_to_current_month_in_chronological_order(): void
     {
-        $report = DashboardMetrics::dailyProfitReport(sortDaysDesc: true);
+        $report = DashboardMetrics::dailyProfitReport();
 
-        $this->assertSame('2026-05-28', $report['date_from']);
+        $this->assertSame('2026-06-01', $report['date_from']);
         $this->assertSame('2026-06-03', $report['date_to']);
-        $this->assertSame(['03.06', '02.06', '01.06', '31.05', '30.05', '29.05', '28.05'], $report['labels']);
+        $this->assertSame(['01.06', '02.06', '03.06'], $report['labels']);
     }
 
     private function resetDashboardMetricsCache(): void
