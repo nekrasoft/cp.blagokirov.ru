@@ -24,6 +24,8 @@ final class DashboardMetrics
     private const PROFIT_FUEL_EXPENSE_CODE = '183';
     private const PROFIT_LANDFILL_EXPENSE_CODE = '185';
 
+    private const DRIVER_WORK_TIME_MACHINE_COUNT = 2;
+
     private const BUNKER_FILL_BUCKET_LABELS = ['0-49%', '50-69%', '70-99%', '100%'];
 
     private const BUNKER_FILL_BUCKET_CHART_COLORS = [
@@ -421,6 +423,76 @@ final class DashboardMetrics
         );
 
         return $count / count($workDates);
+    }
+
+    /**
+     * @return array{average_hours_per_machine: float, work_days: int, total_minutes: int}
+     */
+    public static function driverWorkTimeMachineLoadForCurrentMonth(): array
+    {
+        if (! self::canBuildDriverWorkTimeLoad()) {
+            return [
+                'average_hours_per_machine' => 0.0,
+                'work_days' => 0,
+                'total_minutes' => 0,
+            ];
+        }
+
+        $start = CarbonImmutable::now()->startOfMonth();
+        $end = CarbonImmutable::now()->endOfDay();
+        $workDates = self::workDatesBetween($start, $end);
+        $totalMinutes = self::driverWorkTimeTotalMinutes($start, $end);
+        $workDays = count($workDates);
+
+        return [
+            'average_hours_per_machine' => $workDays > 0
+                ? ($totalMinutes / 60) / $workDays / self::DRIVER_WORK_TIME_MACHINE_COUNT
+                : 0.0,
+            'work_days' => $workDays,
+            'total_minutes' => $totalMinutes,
+        ];
+    }
+
+    /**
+     * @return array{labels: array<int, string>, data: array<int, float>}
+     */
+    public static function driverWorkTimeMachineLoadTrend(int $days = 7): array
+    {
+        $labels = [];
+        $buckets = [];
+        $start = CarbonImmutable::now()->startOfDay()->subDays($days - 1);
+        $end = CarbonImmutable::now()->endOfDay();
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $start->addDays($i);
+            $key = $date->toDateString();
+            $labels[] = $date->format('d.m');
+            $buckets[$key] = 0.0;
+        }
+
+        if (! self::canBuildDriverWorkTimeLoad()) {
+            return ['labels' => $labels, 'data' => array_values($buckets)];
+        }
+
+        try {
+            DB::table('driver_work_time')
+                ->select('work_date')
+                ->selectRaw('COALESCE(SUM(duration_minutes), 0) as total_minutes')
+                ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
+                ->groupBy('work_date')
+                ->get()
+                ->each(function ($row) use (&$buckets): void {
+                    $key = CarbonImmutable::parse($row->work_date)->toDateString();
+
+                    if (array_key_exists($key, $buckets)) {
+                        $buckets[$key] = ((float) $row->total_minutes / 60) / self::DRIVER_WORK_TIME_MACHINE_COUNT;
+                    }
+                });
+        } catch (Throwable) {
+            //
+        }
+
+        return ['labels' => $labels, 'data' => array_values($buckets)];
     }
 
     /**
@@ -1464,6 +1536,26 @@ final class DashboardMetrics
                 ->all();
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    private static function canBuildDriverWorkTimeLoad(): bool
+    {
+        return self::hasColumns('driver_work_time', ['work_date', 'duration_minutes']);
+    }
+
+    private static function driverWorkTimeTotalMinutes(CarbonImmutable $start, CarbonImmutable $end): int
+    {
+        if (! self::canBuildDriverWorkTimeLoad()) {
+            return 0;
+        }
+
+        try {
+            return (int) DB::table('driver_work_time')
+                ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
+                ->sum('duration_minutes');
+        } catch (Throwable) {
+            return 0;
         }
     }
 }

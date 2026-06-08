@@ -59,6 +59,8 @@ class AdminOverviewStats extends StatsOverviewWidget
             ]),
         );
         $requestsAveragePerWorkDay = DashboardMetrics::fillRequestsAveragePerWorkDay(7);
+        $machineLoad = DashboardMetrics::driverWorkTimeMachineLoadForCurrentMonth();
+        $machineLoadTrend = DashboardMetrics::driverWorkTimeMachineLoadTrend(7)['data'];
         $unpaidInvoicesCount = DashboardMetrics::safeCount(DashboardMetrics::unpaidInvoicesQuery());
         $unbilledWorksCount = DashboardMetrics::safeCount(DashboardMetrics::unbilledWorksQuery());
         $unpaidRevenue = DashboardMetrics::unpaidWorksRevenue();
@@ -70,6 +72,13 @@ class AdminOverviewStats extends StatsOverviewWidget
                 ->color($requestsTodayCount > 0 ? 'primary' : 'gray')
                 ->icon(Heroicon::OutlinedClipboardDocumentList)
                 ->url(DashboardMetrics::hasTable('bunker_fill_requests') ? BunkerFillRequestResource::getUrl('index') : null),
+
+            Stat::make('Загруженность машины', number_format($machineLoad['average_hours_per_machine'], 1, ',', ' ').' ч')
+                ->description('За текущий месяц, рабочих дней: '.$machineLoad['work_days'])
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
+                ->color($machineLoad['average_hours_per_machine'] > 0 ? 'primary' : 'gray')
+                ->icon(Heroicon::OutlinedCalculator)
+                ->chart($machineLoadTrend),
 
             Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))
                 ->description('Средняя прибыль в день: '.DashboardMetrics::formatMoney($currentMonthProfitTotals['avg_profit_per_work_day']))
