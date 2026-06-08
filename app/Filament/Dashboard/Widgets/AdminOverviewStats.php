@@ -28,10 +28,11 @@ class AdminOverviewStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $requestsTrend = DashboardMetrics::fillRequestsTrend(7)['data'];
         $revenueTrend = DashboardMetrics::revenueByMonth(6)['data'];
         $bunkerBuckets = DashboardMetrics::bunkerFillBuckets()['data'];
         $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $todayEnd = $now->copy()->endOfDay();
         $closedTo = $now->copy()
             ->subDays(DashboardMetrics::DAILY_PROFIT_CLOSED_DELAY_DAYS)
             ->startOfDay();
@@ -52,19 +53,22 @@ class AdminOverviewStats extends StatsOverviewWidget
             DashboardMetrics::bunkersQuery()?->where('fill_level', '>=', 100),
         );
         $requestsTodayCount = DashboardMetrics::safeCount(
-            DashboardMetrics::fillRequestsQuery()?->whereDate('filled_at', now()->toDateString()),
+            DashboardMetrics::fillRequestsQuery()?->whereBetween('filled_at', [
+                $todayStart->toDateTimeString(),
+                $todayEnd->toDateTimeString(),
+            ]),
         );
+        $requestsAveragePerWorkDay = DashboardMetrics::fillRequestsAveragePerWorkDay(7);
         $unpaidInvoicesCount = DashboardMetrics::safeCount(DashboardMetrics::unpaidInvoicesQuery());
         $unbilledWorksCount = DashboardMetrics::safeCount(DashboardMetrics::unbilledWorksQuery());
         $unpaidRevenue = DashboardMetrics::unpaidWorksRevenue();
 
         return [
             Stat::make('Заявки сегодня', DashboardMetrics::formatInteger($requestsTodayCount))
-                ->description('Динамика за последние 7 дней')
-                ->descriptionIcon(Heroicon::OutlinedArrowTrendingUp)
+                ->description('Среднее за рабочий день: '.number_format($requestsAveragePerWorkDay, 1, ',', ' '))
+                ->descriptionIcon(Heroicon::OutlinedCalendarDays)
                 ->color($requestsTodayCount > 0 ? 'primary' : 'gray')
                 ->icon(Heroicon::OutlinedClipboardDocumentList)
-                ->chart($requestsTrend)
                 ->url(DashboardMetrics::hasTable('bunker_fill_requests') ? BunkerFillRequestResource::getUrl('index') : null),
 
             Stat::make('Прибыль текущего месяца', DashboardMetrics::formatMoney($currentMonthProfitTotals['profit']))

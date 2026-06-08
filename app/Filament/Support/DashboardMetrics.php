@@ -397,6 +397,32 @@ final class DashboardMetrics
         );
     }
 
+    public static function fillRequestsAveragePerWorkDay(int $days = 7, ?CounterpartyUser $counterpartyUser = null): float
+    {
+        $start = CarbonImmutable::now()->startOfDay()->subDays($days - 1);
+        $end = CarbonImmutable::now()->endOfDay();
+        $workDates = self::workDatesBetween($start, $end);
+
+        if ($workDates === [] || ! self::hasColumn('bunker_fill_requests', 'filled_at')) {
+            return 0.0;
+        }
+
+        $count = self::safeCount(
+            self::fillRequestsQuery($counterpartyUser)?->where(function (Builder $dateQuery) use ($workDates): void {
+                foreach ($workDates as $workDate) {
+                    $date = CarbonImmutable::parse($workDate);
+
+                    $dateQuery->orWhereBetween('filled_at', [
+                        $date->startOfDay()->toDateTimeString(),
+                        $date->endOfDay()->toDateTimeString(),
+                    ]);
+                }
+            }),
+        );
+
+        return $count / count($workDates);
+    }
+
     /**
      * @return array{labels: array<int, string>, data: array<int, float>}
      */
@@ -862,25 +888,18 @@ final class DashboardMetrics
             return;
         }
 
-        try {
-            DB::table('driver_work_time')
-                ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
-                ->distinct()
-                ->pluck('work_date')
-                ->each(function ($workDate) use (&$buckets): void {
-                    $date = CarbonImmutable::parse($workDate);
+        foreach (self::workDatesBetween($start, $end) as $workDate) {
+            $date = CarbonImmutable::parse($workDate);
 
-                    foreach ($buckets as &$bucket) {
-                        if ($date->betweenIncluded($bucket['date_from'], $bucket['date_to'])) {
-                            $bucket['work_days']++;
-
-                            return;
-                        }
-                    }
+            foreach ($buckets as &$bucket) {
+                if ($date->betweenIncluded($bucket['date_from'], $bucket['date_to'])) {
+                    $bucket['work_days']++;
                     unset($bucket);
-                });
-        } catch (Throwable) {
-            //
+
+                    continue 2;
+                }
+            }
+            unset($bucket);
         }
 
         $currentMonthStart = CarbonImmutable::now()->startOfMonth();
@@ -1425,5 +1444,26 @@ final class DashboardMetrics
         }
 
         return ['labels' => $labels, 'data' => array_values($buckets)];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function workDatesBetween(CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        if (! self::hasColumn('driver_work_time', 'work_date')) {
+            return [];
+        }
+
+        try {
+            return DB::table('driver_work_time')
+                ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
+                ->distinct()
+                ->pluck('work_date')
+                ->map(fn ($workDate): string => (string) $workDate)
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
     }
 }
