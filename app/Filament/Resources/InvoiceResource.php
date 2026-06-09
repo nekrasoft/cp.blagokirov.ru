@@ -10,6 +10,7 @@ use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
 use BackedEnum;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -27,6 +28,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
 use UnitEnum;
@@ -326,10 +329,26 @@ class InvoiceResource extends Resource
                 DeleteAction::make(),
             ];
 
+            $bulkActions = [];
+
+            if (static::canMarkAsPaid()) {
+                $bulkActions[] = BulkAction::make('markAsPaid')
+                    ->label('Отметить оплаченными')
+                    ->icon('heroicon-m-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Отметить выбранные счета оплаченными?')
+                    ->modalDescription('Сумма оплаты будет равна сумме привязанных работ, дата оплаты - сегодня.')
+                    ->successNotificationTitle('Счета отмечены оплаченными')
+                    ->action(function (Collection $records): void {
+                        static::markAsPaid($records);
+                    });
+            }
+
+            $bulkActions[] = DeleteBulkAction::make();
+
             $toolbarActions = [
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                BulkActionGroup::make($bulkActions),
             ];
         }
 
@@ -460,6 +479,64 @@ class InvoiceResource extends Resource
         } catch (Throwable) {
             return false;
         }
+    }
+
+    protected static function hasWorksColumn(string $column): bool
+    {
+        try {
+            return SchemaFacade::hasColumn('works', $column);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    protected static function canMarkAsPaid(): bool
+    {
+        return static::hasColumn('status')
+            && static::hasColumn('paid_amount')
+            && static::hasColumn('paid_at')
+            && static::hasWorksTable()
+            && static::hasWorksColumn('invoice_id')
+            && static::hasWorksColumn('revenue');
+    }
+
+    /**
+     * @param  Collection<int, Invoice>  $records
+     */
+    protected static function markAsPaid(Collection $records): void
+    {
+        $invoiceIds = $records
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($invoiceIds->isEmpty()) {
+            return;
+        }
+
+        $paidAmounts = DB::table('works')
+            ->select('invoice_id', DB::raw('COALESCE(SUM(revenue), 0) as paid_amount'))
+            ->whereIn('invoice_id', $invoiceIds->all())
+            ->groupBy('invoice_id')
+            ->pluck('paid_amount', 'invoice_id');
+
+        $paidAmountSql = $invoiceIds
+            ->map(function (int $invoiceId) use ($paidAmounts): string {
+                $paidAmount = number_format((float) ($paidAmounts[$invoiceId] ?? 0), 2, '.', '');
+
+                return "WHEN {$invoiceId} THEN {$paidAmount}";
+            })
+            ->implode(' ');
+
+        Invoice::query()
+            ->whereKey($invoiceIds->all())
+            ->update([
+                'status' => 'paid',
+                'paid_amount' => DB::raw("CASE id {$paidAmountSql} ELSE paid_amount END"),
+                'paid_at' => now(),
+            ]);
     }
 
     protected static function buildBitrixTaskUrl(?int $taskId): ?string
