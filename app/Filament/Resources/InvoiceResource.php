@@ -228,10 +228,6 @@ class InvoiceResource extends Resource
                 ->iconPosition('after')
                 ->url(fn (Invoice $record): ?string => $record->pdf_url ?: null, shouldOpenInNewTab: true);
 
-            if ($isCounterparty) {
-                $invoiceNumberColumn->copyable();
-            }
-
             $columns[] = $invoiceNumberColumn;
         }
 
@@ -260,22 +256,6 @@ class InvoiceResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('status')) {
-            $columns[] = TextColumn::make('status')
-                ->label('Статус')
-                ->badge()
-                ->formatStateUsing(fn (?string $state, Invoice $record): string => static::invoiceStatusLabel($state, $record))
-                ->color(fn (?string $state): string => match ($state) {
-                    'paid' => 'success',
-                    'issued' => 'warning',
-                    'failed', 'cancelled' => 'danger',
-                    'draft' => 'gray',
-                    'pending' => 'info',
-                    default => 'gray',
-                })
-                ->sortable();
-        }
-
         if (static::canUseInvoiceItemsTotal() || static::hasColumn('paid_amount')) {
             $amountColumn = TextColumn::make(static::canUseInvoiceItemsTotal() ? 'items_total' : 'paid_amount')
                 ->label('Сумма')
@@ -290,6 +270,22 @@ class InvoiceResource extends Resource
             }
 
             $columns[] = $amountColumn;
+        }
+
+        if (static::hasColumn('status')) {
+            $columns[] = TextColumn::make('status')
+                ->label('Статус')
+                ->badge()
+                ->formatStateUsing(fn (?string $state, Invoice $record): string => static::invoiceStatusLabel($state, $record))
+                ->color(fn (?string $state): string => match ($state) {
+                    'paid' => 'success',
+                    'issued' => 'warning',
+                    'failed', 'cancelled' => 'danger',
+                    'draft' => 'gray',
+                    'pending' => 'info',
+                    default => 'gray',
+                })
+                ->sortable();
         }
 
         if (static::hasColumn('pdf_url')) {
