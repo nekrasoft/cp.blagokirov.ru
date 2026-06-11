@@ -57,6 +57,10 @@ class InvoiceResource extends Resource
 
     protected static array $hasCounterpartyColumnCache = [];
 
+    protected static ?bool $hasInvoiceItemsTableCache = null;
+
+    protected static array $hasInvoiceItemsColumnCache = [];
+
     public static function form(Schema $schema): Schema
     {
         $components = [];
@@ -200,15 +204,7 @@ class InvoiceResource extends Resource
             $columns[] = TextColumn::make('status')
                 ->label('Статус')
                 ->badge()
-                ->formatStateUsing(fn (?string $state): string => match ($state) {
-                    'draft' => 'Черновик',
-                    'pending' => 'В обработке',
-                    'issued' => 'К оплате',
-                    'paid' => 'Оплачен',
-                    'failed' => 'Ошибка',
-                    'cancelled' => 'Отменён',
-                    default => 'Без статуса',
-                })
+                ->formatStateUsing(fn (?string $state, Invoice $record): string => static::invoiceStatusLabel($state, $record))
                 ->color(fn (?string $state): string => match ($state) {
                     'paid' => 'success',
                     'issued' => 'warning',
@@ -220,32 +216,20 @@ class InvoiceResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('paid_amount')) {
-            $paidAmountColumn = TextColumn::make('paid_amount')
-                ->label('Оплачено')
+        if (static::canUseInvoiceItemsTotal() || static::hasColumn('paid_amount')) {
+            $amountColumn = TextColumn::make(static::canUseInvoiceItemsTotal() ? 'items_total' : 'paid_amount')
+                ->label('Сумма')
+                ->state(fn (Invoice $record): float => static::invoiceTotalAmount($record))
                 ->formatStateUsing(
                     fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ').' ₽'
                 )
                 ->sortable();
 
             if (! $isCounterparty) {
-                $paidAmountColumn->toggleable();
+                $amountColumn->toggleable();
             }
 
-            $columns[] = $paidAmountColumn;
-        }
-
-        if (static::hasColumn('paid_at')) {
-            $paidAtColumn = TextColumn::make('paid_at')
-                ->label('Дата оплаты')
-                ->date('d.m.Y')
-                ->sortable();
-
-            if (! $isCounterparty) {
-                $paidAtColumn->toggleable();
-            }
-
-            $columns[] = $paidAtColumn;
+            $columns[] = $amountColumn;
         }
 
         if (static::hasColumn('pdf_url')) {
@@ -386,6 +370,11 @@ class InvoiceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+
+        if (static::canUseInvoiceItemsTotal()) {
+            $query->withSum('items as items_total', DB::raw('price * amount'));
+        }
+
         $counterpartyUser = static::getAuthenticatedCounterpartyUser();
 
         if (! $counterpartyUser) {
@@ -488,6 +477,67 @@ class InvoiceResource extends Resource
         } catch (Throwable) {
             return false;
         }
+    }
+
+    protected static function hasInvoiceItemsTable(): bool
+    {
+        if (static::$hasInvoiceItemsTableCache !== null) {
+            return static::$hasInvoiceItemsTableCache;
+        }
+
+        try {
+            static::$hasInvoiceItemsTableCache = SchemaFacade::hasTable('invoice_items');
+        } catch (Throwable) {
+            static::$hasInvoiceItemsTableCache = false;
+        }
+
+        return static::$hasInvoiceItemsTableCache;
+    }
+
+    protected static function hasInvoiceItemsColumn(string $column): bool
+    {
+        if (array_key_exists($column, static::$hasInvoiceItemsColumnCache)) {
+            return static::$hasInvoiceItemsColumnCache[$column];
+        }
+
+        try {
+            static::$hasInvoiceItemsColumnCache[$column] = SchemaFacade::hasColumn('invoice_items', $column);
+        } catch (Throwable) {
+            static::$hasInvoiceItemsColumnCache[$column] = false;
+        }
+
+        return static::$hasInvoiceItemsColumnCache[$column];
+    }
+
+    protected static function canUseInvoiceItemsTotal(): bool
+    {
+        return static::hasInvoiceItemsTable()
+            && static::hasInvoiceItemsColumn('invoice_id')
+            && static::hasInvoiceItemsColumn('price')
+            && static::hasInvoiceItemsColumn('amount');
+    }
+
+    protected static function invoiceTotalAmount(Invoice $record): float
+    {
+        return (float) ($record->getAttribute('items_total') ?? $record->paid_amount ?? 0);
+    }
+
+    protected static function invoiceStatusLabel(?string $state, Invoice $record): string
+    {
+        if ($state === 'paid') {
+            return $record->paid_at
+                ? 'Оплачен '.$record->paid_at->format('d.m.Y')
+                : 'Оплачен';
+        }
+
+        return match ($state) {
+            'draft' => 'Черновик',
+            'pending' => 'В обработке',
+            'issued' => 'К оплате',
+            'failed' => 'Ошибка',
+            'cancelled' => 'Отменён',
+            default => 'Без статуса',
+        };
     }
 
     protected static function canMarkAsPaid(): bool

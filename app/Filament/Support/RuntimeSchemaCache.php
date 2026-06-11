@@ -19,7 +19,7 @@ final class RuntimeSchemaCache
         BunkerFillRequestResource::class => ['hasTableCache', 'hasColumnCache', 'hasCounterpartyColumnCache'],
         BunkerResource::class => ['hasTableCache', 'hasColumnCache', 'hasCounterpartyColumnCache'],
         CounterpartyResource::class => ['hasColumnCache'],
-        InvoiceResource::class => ['hasTableCache', 'hasColumnCache', 'hasCounterpartyColumnCache'],
+        InvoiceResource::class => ['hasTableCache', 'hasColumnCache', 'hasCounterpartyColumnCache', 'hasInvoiceItemsTableCache', 'hasInvoiceItemsColumnCache'],
         WorkResource::class => ['hasTableCache', 'hasColumnCache'],
         DashboardMetrics::class => ['tableCache', 'columnCache'],
     ];
