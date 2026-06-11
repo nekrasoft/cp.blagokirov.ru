@@ -115,6 +115,17 @@ class InvoiceResourceMarkAsPaidTest extends TestCase
         $this->assertSame('Оплачен 09.06.2026', $this->invokeInvoiceStatusLabel('paid', $invoice));
     }
 
+    public function test_invoice_items_state_total_sums_price_and_amount(): void
+    {
+        $itemsState = [
+            ['price' => '1000,50', 'amount' => '2'],
+            ['price' => '300', 'amount' => '1.5'],
+            ['price' => null, 'amount' => '10'],
+        ];
+
+        $this->assertEqualsWithDelta(2451, $this->invokeInvoiceItemsStateTotal($itemsState), 0.001);
+    }
+
     public function test_works_invoice_id_index_migration_adds_matching_index(): void
     {
         $migration = require database_path('migrations/2026_06_09_000014_add_invoice_id_index_to_works_table.php');
@@ -165,5 +176,14 @@ class InvoiceResourceMarkAsPaidTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke(null, $state, $invoice);
+    }
+
+    private function invokeInvoiceItemsStateTotal(array $itemsState): float
+    {
+        $reflection = new ReflectionClass(InvoiceResource::class);
+        $method = $reflection->getMethod('invoiceItemsStateTotal');
+        $method->setAccessible(true);
+
+        return $method->invoke(null, $itemsState);
     }
 }

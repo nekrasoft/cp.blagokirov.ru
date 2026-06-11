@@ -18,9 +18,13 @@ use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -144,6 +148,62 @@ class InvoiceResource extends Resource
                 ->rule('integer');
         }
 
+        if (static::canEditInvoiceItems()) {
+            $components[] = Placeholder::make('items_total_preview')
+                ->label('Итоговая сумма счёта')
+                ->content(fn (Get $get): string => static::formatMoney(static::invoiceItemsStateTotal($get('items'))))
+                ->visible(fn (?Invoice $record): bool => (bool) $record?->exists);
+
+            $components[] = Repeater::make('items')
+                ->label('Позиции счёта')
+                ->relationship(
+                    name: 'items',
+                    modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('id'),
+                )
+                ->table([
+                    TableColumn::make('Наименование'),
+                    TableColumn::make('Цена')->markAsRequired()->width('140px'),
+                    TableColumn::make('Кол-во')->markAsRequired()->width('120px'),
+                    TableColumn::make('Ед.')->width('90px'),
+                    TableColumn::make('НДС')->width('90px'),
+                ])
+                ->schema([
+                    TextInput::make('name')
+                        ->hiddenLabel()
+                        ->required()
+                        ->maxLength(1000),
+
+                    TextInput::make('price')
+                        ->hiddenLabel()
+                        ->numeric()
+                        ->inputMode('decimal')
+                        ->rule('min:0')
+                        ->required()
+                        ->live(debounce: 500),
+
+                    TextInput::make('amount')
+                        ->hiddenLabel()
+                        ->numeric()
+                        ->inputMode('decimal')
+                        ->rule('min:0')
+                        ->required()
+                        ->live(debounce: 500),
+
+                    TextInput::make('unit')
+                        ->hiddenLabel()
+                        ->required()
+                        ->maxLength(50),
+
+                    TextInput::make('vat')
+                        ->hiddenLabel()
+                        ->maxLength(10),
+                ])
+                ->addable(false)
+                ->deletable(false)
+                ->reorderable(false)
+                ->visible(fn (?Invoice $record): bool => (bool) $record?->exists);
+        }
+
         return $schema->components($components);
     }
 
@@ -221,7 +281,7 @@ class InvoiceResource extends Resource
                 ->label('Сумма')
                 ->state(fn (Invoice $record): float => static::invoiceTotalAmount($record))
                 ->formatStateUsing(
-                    fn ($state): string => number_format((float) ($state ?? 0), 2, ',', ' ').' ₽'
+                    fn ($state): string => static::formatMoney((float) ($state ?? 0))
                 )
                 ->sortable();
 
@@ -517,9 +577,46 @@ class InvoiceResource extends Resource
             && static::hasInvoiceItemsColumn('amount');
     }
 
+    protected static function canEditInvoiceItems(): bool
+    {
+        return static::canUseInvoiceItemsTotal()
+            && static::hasInvoiceItemsColumn('name')
+            && static::hasInvoiceItemsColumn('unit')
+            && static::hasInvoiceItemsColumn('vat');
+    }
+
     protected static function invoiceTotalAmount(Invoice $record): float
     {
         return (float) ($record->getAttribute('items_total') ?? $record->paid_amount ?? 0);
+    }
+
+    protected static function invoiceItemsStateTotal(mixed $itemsState): float
+    {
+        if (! is_array($itemsState)) {
+            return 0.0;
+        }
+
+        return array_reduce(
+            $itemsState,
+            fn (float $total, mixed $item): float => $total + (
+                is_array($item)
+                    ? static::decimalStateValue($item['price'] ?? null) * static::decimalStateValue($item['amount'] ?? null)
+                    : 0.0
+            ),
+            0.0,
+        );
+    }
+
+    protected static function decimalStateValue(mixed $value): float
+    {
+        $value = str_replace([' ', ','], ['', '.'], trim((string) $value));
+
+        return is_numeric($value) ? (float) $value : 0.0;
+    }
+
+    protected static function formatMoney(float $amount): string
+    {
+        return number_format($amount, 2, ',', ' ').' ₽';
     }
 
     protected static function invoiceStatusLabel(?string $state, Invoice $record): string
