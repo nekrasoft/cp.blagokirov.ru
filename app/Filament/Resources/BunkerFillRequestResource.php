@@ -75,15 +75,6 @@ class BunkerFillRequestResource extends Resource
                 ->sortable();
         }
 
-        if (static::hasColumn('fill_level')) {
-            $columns[] = TextColumn::make('fill_level')
-                ->label('Заполненность')
-                ->formatStateUsing(fn ($state): string => (int) ($state ?? 0).'%')
-                ->badge()
-                ->color(fn ($state): string => DashboardMetrics::bunkerFillLevelColor($state))
-                ->sortable();
-        }
-
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
             $columns[] = TextColumn::make('counterparty.'.static::counterpartyTitleAttribute())
                 ->label('Контрагент')
@@ -107,7 +98,7 @@ class BunkerFillRequestResource extends Resource
                 ->wrap();
         }
 
-        if (static::hasColumn('filled_by')) {
+        if (! $isCounterparty && static::hasColumn('filled_by')) {
             $columns[] = TextColumn::make('filled_by')
                 ->label('Кто создал')
                 ->searchable()
