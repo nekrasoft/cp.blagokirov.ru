@@ -73,6 +73,7 @@ class ListInvoiceDebtors extends ListRecords
                     ->sortable(),
             ])
             ->defaultSort('unpaid_total', 'desc')
+            ->defaultKeySort(false)
             ->recordUrl(fn (Invoice $record): string => $this->unpaidInvoicesUrl($record))
             ->recordActions([
                 Action::make('showInvoices')
