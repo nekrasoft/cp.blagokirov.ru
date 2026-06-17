@@ -6,6 +6,7 @@ use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Resources\InvoiceResource\Pages\CreateInvoice;
 use App\Filament\Resources\InvoiceResource\Pages\EditInvoice;
+use App\Filament\Resources\InvoiceResource\Pages\ListInvoiceDebtors;
 use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
 use App\Models\CounterpartyUser;
 use App\Models\Invoice;
@@ -407,6 +408,7 @@ class InvoiceResource extends Resource
     {
         return [
             'index' => ListInvoices::route('/'),
+            'debtors' => ListInvoiceDebtors::route('/debtors'),
             'create' => CreateInvoice::route('/create'),
             'edit' => EditInvoice::route('/{record}/edit'),
         ];

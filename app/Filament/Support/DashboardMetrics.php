@@ -354,6 +354,64 @@ final class DashboardMetrics
         });
     }
 
+    public static function canBuildUnpaidInvoiceDebtorsReport(): bool
+    {
+        return self::hasColumns('invoices', ['counterparty_id', 'status'])
+            && (
+                self::hasColumns('invoice_items', ['invoice_id', 'price', 'amount'])
+                || self::hasColumn('invoices', 'paid_amount')
+            );
+    }
+
+    public static function unpaidInvoiceDebtorsQuery(): ?Builder
+    {
+        if (! self::canBuildUnpaidInvoiceDebtorsReport()) {
+            return null;
+        }
+
+        $query = Invoice::query()
+            ->selectRaw('COALESCE(invoices.counterparty_id, 0) as id')
+            ->addSelect('invoices.counterparty_id')
+            ->selectRaw('COUNT(*) as unpaid_invoices_count')
+            ->groupBy('invoices.counterparty_id');
+
+        if (self::hasColumns('invoice_items', ['invoice_id', 'price', 'amount'])) {
+            $invoiceTotals = DB::table('invoice_items')
+                ->select('invoice_id')
+                ->selectRaw('COALESCE(SUM(price * amount), 0) as invoice_total')
+                ->groupBy('invoice_id');
+
+            $query
+                ->leftJoinSub($invoiceTotals, 'invoice_totals', function ($join): void {
+                    $join->on('invoice_totals.invoice_id', '=', 'invoices.id');
+                })
+                ->selectRaw('COALESCE(SUM(invoice_totals.invoice_total), 0) as unpaid_total');
+        } else {
+            $query->selectRaw('COALESCE(SUM(invoices.paid_amount), 0) as unpaid_total');
+        }
+
+        if (self::hasColumn('invoices', 'due_date')) {
+            $query
+                ->selectRaw(
+                    'SUM(CASE WHEN invoices.due_date IS NOT NULL AND invoices.due_date < ? THEN 1 ELSE 0 END) as overdue_invoices_count',
+                    [now()->toDateString()],
+                )
+                ->selectRaw('MIN(invoices.due_date) as oldest_due_date');
+        } else {
+            $query
+                ->selectRaw('0 as overdue_invoices_count')
+                ->selectRaw('NULL as oldest_due_date');
+        }
+
+        self::applyUnpaidInvoiceStatusScope($query);
+
+        if (self::hasTable('counterparties')) {
+            $query->with('counterparty');
+        }
+
+        return $query;
+    }
+
     public static function unbilledWorksQuery(?CounterpartyUser $counterpartyUser = null): ?Builder
     {
         $query = self::worksQuery($counterpartyUser);
@@ -384,6 +442,15 @@ final class DashboardMetrics
         });
 
         return self::safeSum($query, 'revenue');
+    }
+
+    public static function applyUnpaidInvoiceStatusScope(Builder $query): Builder
+    {
+        return $query->where(function (Builder $statusQuery): void {
+            $statusQuery
+                ->whereIn('invoices.status', ['issued', 'pending'])
+                ->orWhereNull('invoices.status');
+        });
     }
 
     /**

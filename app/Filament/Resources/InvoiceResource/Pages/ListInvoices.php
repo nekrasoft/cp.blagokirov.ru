@@ -6,6 +6,7 @@ use App\Filament\Resources\InvoiceResource;
 use App\Filament\Support\DashboardMetrics;
 use App\Filament\Widgets\UnpaidInvoicesWarning;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -56,11 +57,21 @@ class ListInvoices extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        if (! InvoiceResource::canCreate()) {
-            return [];
+        $actions = [];
+
+        if (! DashboardMetrics::currentCounterpartyUser() && DashboardMetrics::canBuildUnpaidInvoiceDebtorsReport()) {
+            $actions[] = Action::make('debtors')
+                ->label('Топ-должники')
+                ->icon('heroicon-m-chart-bar')
+                ->color('danger')
+                ->url(fn (): string => InvoiceResource::getUrl('debtors'));
         }
 
-        return [CreateAction::make()];
+        if (InvoiceResource::canCreate()) {
+            $actions[] = CreateAction::make();
+        }
+
+        return $actions;
     }
 
     protected function getHeaderWidgets(): array

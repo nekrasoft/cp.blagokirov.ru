@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256:build-source-files-normalized:v2",
-  "fingerprint": "8646820ac1fe95432ed1606e75f3fa7c92d3ce014978e7f8f56824fc983decfa",
+  "fingerprint": "a6c6ac3b8fb245c0e1709b977f5a2d6f06b17059c84f4d87b77feb9bdeafd68d",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",
     "app/Filament/Auth/CounterpartyLogin.php",
@@ -50,6 +50,7 @@
     "app/Filament/Resources/InvoiceResource.php",
     "app/Filament/Resources/InvoiceResource/Pages/CreateInvoice.php",
     "app/Filament/Resources/InvoiceResource/Pages/EditInvoice.php",
+    "app/Filament/Resources/InvoiceResource/Pages/ListInvoiceDebtors.php",
     "app/Filament/Resources/InvoiceResource/Pages/ListInvoices.php",
     "app/Filament/Resources/UserResource.php",
     "app/Filament/Resources/UserResource/Pages/CreateUser.php",
