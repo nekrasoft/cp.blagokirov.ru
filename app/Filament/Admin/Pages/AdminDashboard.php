@@ -59,11 +59,11 @@ class AdminDashboard extends Dashboard
                 ->visible(fn (): bool => DashboardMetrics::hasColumns('bunkers', ['fill_level'])),
 
             Action::make('unpaidInvoices')
-                ->label('Неоплаченные счета')
+                ->label('Топ-должники')
                 ->icon(Heroicon::OutlinedBanknotes)
                 ->color('danger')
-                ->url(fn (): string => InvoiceResource::getUrl('index', ['tab' => 'unpaid']))
-                ->visible(fn (): bool => DashboardMetrics::hasColumns('invoices', ['status'])),
+                ->url(fn (): string => InvoiceResource::getUrl('debtors'))
+                ->visible(fn (): bool => DashboardMetrics::canBuildUnpaidInvoiceDebtorsReport()),
 
             Action::make('recentRequests')
                 ->label('Последние заявки')
