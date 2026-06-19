@@ -105,6 +105,27 @@ class InvoiceResourceMarkAsPaidTest extends TestCase
         $this->assertEqualsWithDelta(350.75, $this->invokeInvoiceTotalAmount($invoice), 0.001);
     }
 
+    public function test_selected_invoices_total_sums_only_items_of_filtered_invoices(): void
+    {
+        DB::table('invoices')->insert([
+            ['id' => 1, 'status' => 'issued', 'paid_amount' => null, 'paid_at' => null],
+            ['id' => 2, 'status' => 'issued', 'paid_amount' => null, 'paid_at' => null],
+            ['id' => 3, 'status' => 'issued', 'paid_amount' => null, 'paid_at' => null],
+        ]);
+
+        DB::table('invoice_items')->insert([
+            ['invoice_id' => 1, 'price' => 100, 'amount' => 2],
+            ['invoice_id' => 2, 'price' => 500, 'amount' => 1],
+            ['invoice_id' => 3, 'price' => 50.25, 'amount' => 3],
+        ]);
+
+        $total = InvoiceResource::formatInvoicesTotal(
+            InvoiceResource::getEloquentQuery()->whereKey([1, 3]),
+        );
+
+        $this->assertSame('350,75 ₽', $total);
+    }
+
     public function test_paid_status_label_includes_payment_date(): void
     {
         $invoice = new Invoice([

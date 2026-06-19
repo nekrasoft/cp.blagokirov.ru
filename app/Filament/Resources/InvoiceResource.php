@@ -588,6 +588,35 @@ class InvoiceResource extends Resource
         return (float) ($record->getAttribute('items_total') ?? $record->paid_amount ?? 0);
     }
 
+    public static function formatInvoicesTotal(Builder $query): string
+    {
+        if (static::canUseInvoiceItemsTotal()) {
+            $invoiceIdsQuery = (clone $query)
+                ->reorder()
+                ->select('invoices.id');
+
+            $total = DB::table('invoice_items')
+                ->whereIn('invoice_id', $invoiceIdsQuery)
+                ->sum(DB::raw('price * amount'));
+
+            return static::formatMoney((float) $total);
+        }
+
+        if (! static::hasColumn('paid_amount')) {
+            return static::formatMoney(0);
+        }
+
+        $selectedInvoicesQuery = (clone $query)
+            ->reorder()
+            ->select('invoices.paid_amount');
+
+        $total = DB::query()
+            ->fromSub($selectedInvoicesQuery, 'selected_invoices')
+            ->sum('paid_amount');
+
+        return static::formatMoney((float) $total);
+    }
+
     protected static function invoiceItemsStateTotal(mixed $itemsState): float
     {
         if (! is_array($itemsState)) {

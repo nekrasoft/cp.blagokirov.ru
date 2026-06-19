@@ -6,6 +6,7 @@ use App\Filament\Admin\Pages\AdminDashboard;
 use App\Filament\Pages\DailyProfitReportPage;
 use App\Filament\Pages\DriverWorkTimeSummaryPage;
 use App\Filament\Pages\MonthlyWorkSummaryPage;
+use App\Filament\Resources\InvoiceResource\Pages\ListInvoices;
 use App\Filament\Support\TailAdminTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -13,6 +14,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Tables\View\TablesRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -32,6 +34,11 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('favicon.svg'))
             ->brandName('БлагоСервис')
             ->login()
+            ->renderHook(
+                TablesRenderHook::SELECTION_INDICATOR_ACTIONS_BEFORE,
+                fn () => view('filament.resources.invoice-resource.selected-total'),
+                scopes: ListInvoices::class,
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->pages([
                 AdminDashboard::class,

@@ -11,6 +11,7 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Renderless;
 
 class ListInvoices extends ListRecords
 {
@@ -79,6 +80,31 @@ class ListInvoices extends ListRecords
         return [
             UnpaidInvoicesWarning::class,
         ];
+    }
+
+    /**
+     * @param  array<int, int|string>  $selectedRecordKeys
+     * @param  array<int, int|string>  $deselectedRecordKeys
+     */
+    #[Renderless]
+    public function getSelectedInvoicesTotal(
+        array $selectedRecordKeys = [],
+        array $deselectedRecordKeys = [],
+        bool $isTrackingDeselectedRecords = false,
+    ): string {
+        $query = $this->getFilteredTableQuery();
+
+        if (! $query) {
+            return '0,00 ₽';
+        }
+
+        if ($isTrackingDeselectedRecords) {
+            $query->whereKeyNot($deselectedRecordKeys);
+        } else {
+            $query->whereKey($selectedRecordKeys);
+        }
+
+        return InvoiceResource::formatInvoicesTotal($query);
     }
 
     private function countInvoices(?Closure $scope = null): int

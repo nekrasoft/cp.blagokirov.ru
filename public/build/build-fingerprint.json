@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256:build-source-files-normalized:v2",
-  "fingerprint": "a6c6ac3b8fb245c0e1709b977f5a2d6f06b17059c84f4d87b77feb9bdeafd68d",
+  "fingerprint": "f5ca4145513e6be0f1ec4556cef8601c47dcac8a6715a89031ddab085b8dd168",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",
     "app/Filament/Auth/CounterpartyLogin.php",
@@ -77,6 +77,7 @@
     "resources/views/filament/pages/daily-profit-report-page.blade.php",
     "resources/views/filament/pages/driver-work-time-summary-page.blade.php",
     "resources/views/filament/pages/monthly-work-summary-page.blade.php",
+    "resources/views/filament/resources/invoice-resource/selected-total.blade.php",
     "resources/views/filament/tailadmin/navigation-search-sync.blade.php",
     "resources/views/filament/tailadmin/theme-toggle.blade.php",
     "resources/views/filament/widgets/unpaid-invoices-warning.blade.php",
