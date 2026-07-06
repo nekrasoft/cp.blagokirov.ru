@@ -95,6 +95,25 @@ class DashboardMetricsMonthlyWorkSummaryTest extends TestCase
         $this->assertSame(1650.0, $summary['totals']['received']);
     }
 
+    public function test_monthly_work_summary_uses_fixed_category_order(): void
+    {
+        DB::table('works')->insert([
+            ['id' => 1, 'date' => '2026-06-01', 'structure' => 'Тендеры - Вывоз мусора', 'operation' => null, 'object_count' => '1', 'volume' => 154, 'revenue' => 400, 'invoice_id' => null],
+            ['id' => 2, 'date' => '2026-06-02', 'structure' => 'ФЛ - Вывоз мусора', 'operation' => null, 'object_count' => '2', 'volume' => null, 'revenue' => 200, 'invoice_id' => null],
+            ['id' => 3, 'date' => '2026-06-03', 'structure' => 'ЮЛ - Контейнеры', 'operation' => null, 'object_count' => '3', 'volume' => null, 'revenue' => 300, 'invoice_id' => null],
+            ['id' => 4, 'date' => '2026-06-04', 'structure' => 'ЮЛ - Вывоз мусора', 'operation' => null, 'object_count' => '4', 'volume' => null, 'revenue' => 500, 'invoice_id' => null],
+        ]);
+
+        $summary = DashboardMetrics::monthlyWorkSummary('2026-06');
+
+        $this->assertSame([
+            'ЮЛ - Контейнеры',
+            'ЮЛ - Вывоз мусора',
+            'ФЛ - Вывоз мусора',
+            'Тендеры - Вывоз мусора',
+        ], array_column($summary['rows'], 'name'));
+    }
+
     /**
      * @param  array<int, array{name: string}>  $rows
      * @return array<string, mixed>

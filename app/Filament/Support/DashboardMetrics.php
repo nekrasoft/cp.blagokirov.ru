@@ -1506,11 +1506,20 @@ final class DashboardMetrics
 
     private static function monthlySummaryCategoryPriority(string $name): int
     {
-        $name = mb_strtolower($name);
+        $name = self::monthlySummaryCategoryKey($name);
+        $isWasteRemoval = str_contains($name, 'вывоз мусора');
 
         return match (true) {
-            str_contains($name, 'контейнер') => 10,
-            str_contains($name, 'ломовоз') => 20,
+            preg_match('/(^|[^\pL\pN])юл([^\pL\pN]|$)/u', $name) === 1
+                && str_contains($name, 'контейнер') => 10,
+            preg_match('/(^|[^\pL\pN])юл([^\pL\pN]|$)/u', $name) === 1
+                && $isWasteRemoval => 20,
+            preg_match('/(^|[^\pL\pN])фл([^\pL\pN]|$)/u', $name) === 1
+                && $isWasteRemoval => 30,
+            str_contains($name, 'тендер')
+                && $isWasteRemoval => 40,
+            str_contains($name, 'контейнер') => 50,
+            str_contains($name, 'ломовоз') => 60,
             default => 100,
         };
     }
