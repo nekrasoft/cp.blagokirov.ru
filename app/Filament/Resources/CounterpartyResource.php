@@ -16,6 +16,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -23,6 +24,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Throwable;
@@ -46,6 +48,10 @@ class CounterpartyResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
 
     protected static array $hasColumnCache = [];
+
+    private const OPERATION_TYPE_CONTAINER_PICKUP = 'container_pickup';
+
+    private const OPERATION_TYPE_TRIP_REMOVAL = 'trip_removal';
 
     public static function form(Schema $schema): Schema
     {
@@ -120,9 +126,16 @@ class CounterpartyResource extends Resource
         }
 
         if (static::hasColumn('operation_type')) {
-            $components[] = TextInput::make('operation_type')
+            $components[] = Select::make('operation_type')
                 ->label('Тип операции')
-                ->maxLength(255);
+                ->options(static::operationTypeOptions())
+                ->default(self::OPERATION_TYPE_CONTAINER_PICKUP)
+                ->afterStateHydrated(function (Select $component, ?string $state): void {
+                    $component->state(static::normalizeOperationType($state));
+                })
+                ->dehydrateStateUsing(fn (?string $state): string => static::normalizeOperationType($state))
+                ->rule('in:'.implode(',', array_keys(static::operationTypeOptions())))
+                ->required();
         }
 
         if (static::hasColumn('status')) {
@@ -235,6 +248,7 @@ class CounterpartyResource extends Resource
         if (static::hasColumn('operation_type')) {
             $columns[] = TextColumn::make('operation_type')
                 ->label('Тип операции')
+                ->formatStateUsing(fn (?string $state): string => static::operationTypeLabel($state))
                 ->searchable()
                 ->toggleable();
         }
@@ -256,6 +270,13 @@ class CounterpartyResource extends Resource
                     'active' => 'active',
                     'inactive' => 'inactive',
                 ]);
+        }
+
+        if (static::hasColumn('operation_type')) {
+            $filters[] = SelectFilter::make('operation_type')
+                ->label('Тип операции')
+                ->options(static::operationTypeOptions())
+                ->query(fn (Builder $query, array $data): Builder => static::applyOperationTypeFilter($query, $data['value'] ?? null));
         }
 
         $recordActions = [];
@@ -337,6 +358,48 @@ class CounterpartyResource extends Resource
         }
 
         return static::$hasColumnCache[$column];
+    }
+
+    protected static function operationTypeOptions(): array
+    {
+        return [
+            self::OPERATION_TYPE_CONTAINER_PICKUP => self::OPERATION_TYPE_CONTAINER_PICKUP,
+            self::OPERATION_TYPE_TRIP_REMOVAL => self::OPERATION_TYPE_TRIP_REMOVAL,
+        ];
+    }
+
+    protected static function normalizeOperationType(?string $operationType): string
+    {
+        $operationType = trim((string) $operationType);
+
+        return $operationType === '' ? self::OPERATION_TYPE_CONTAINER_PICKUP : $operationType;
+    }
+
+    protected static function operationTypeLabel(?string $operationType): string
+    {
+        $operationType = static::normalizeOperationType($operationType);
+
+        return static::operationTypeOptions()[$operationType] ?? $operationType;
+    }
+
+    protected static function applyOperationTypeFilter(Builder $query, ?string $operationType): Builder
+    {
+        $operationType = trim((string) $operationType);
+
+        if ($operationType === '') {
+            return $query;
+        }
+
+        if ($operationType === self::OPERATION_TYPE_CONTAINER_PICKUP) {
+            return $query->where(function (Builder $query): void {
+                $query
+                    ->where('operation_type', self::OPERATION_TYPE_CONTAINER_PICKUP)
+                    ->orWhereNull('operation_type')
+                    ->orWhere('operation_type', '');
+            });
+        }
+
+        return $query->where('operation_type', $operationType);
     }
 
     protected static function buildBitrixCompanyUrl(?int $companyId): ?string
