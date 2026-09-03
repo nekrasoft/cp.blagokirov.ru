@@ -100,7 +100,6 @@ class BunkerResource extends Resource
         if (static::hasColumn('district')) {
             $components[] = TextInput::make('district')
                 ->label('Район')
-                ->required()
                 ->maxLength(255);
         }
 
