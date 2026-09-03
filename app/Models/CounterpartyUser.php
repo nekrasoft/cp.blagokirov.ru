@@ -12,6 +12,11 @@ class CounterpartyUser extends Authenticatable implements FilamentUser, HasName
 {
     protected $table = 'counterparty_users';
 
+    public function getConnectionName(): ?string
+    {
+        return config('database.primary_connection');
+    }
+
     protected $fillable = [
         'login',
         'password_hash',

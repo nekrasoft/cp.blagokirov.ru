@@ -137,6 +137,15 @@ class UseCounterpartyDemoDatabaseTest extends TestCase
         $this->assertSame('sqlite', DB::getDefaultConnection());
     }
 
+    public function test_counterparty_users_always_use_the_primary_connection(): void
+    {
+        config()->set('database.default', 'sqlite');
+        config()->set('database.primary_connection', 'sqlite');
+        DB::setDefaultConnection('demo');
+
+        $this->assertSame('sqlite', (new CounterpartyUser())->getConnectionName());
+    }
+
     private function bunkerResourceHasTable(): bool
     {
         $method = new ReflectionMethod(BunkerResource::class, 'hasTable');

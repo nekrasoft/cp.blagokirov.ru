@@ -19,6 +19,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'primary_connection' => env('DB_CONNECTION', 'sqlite'),
+
     'demo_connection' => env('DEMO_DB_CONNECTION_NAME', 'demo'),
 
     /*
