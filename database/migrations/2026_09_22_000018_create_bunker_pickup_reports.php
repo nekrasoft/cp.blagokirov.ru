@@ -86,10 +86,16 @@ return new class extends Migration
                 $table->string('content_type', 100);
                 $table->unsignedBigInteger('file_size');
                 $table->char('file_sha256', 64);
-                $table->mediumBlob('file_data');
+                $table->binary('file_data');
                 $table->timestamp('created_at')->useCurrent();
                 $table->index(['report_id', 'kind'], 'idx_bunker_pickup_files_report_kind');
             });
+
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                Schema::getConnection()->statement(
+                    'ALTER TABLE bunker_pickup_files MODIFY file_data MEDIUMBLOB NOT NULL',
+                );
+            }
         }
     }
 
