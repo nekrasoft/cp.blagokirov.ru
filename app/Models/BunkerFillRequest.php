@@ -23,6 +23,10 @@ class BunkerFillRequest extends Model
         'filled_by',
         'filled_at',
         'executed_at',
+        'cancelled_at',
+        'cancellation_reason_code',
+        'cancellation_comment',
+        'cancelled_by',
         'created_at',
     ];
 
@@ -32,6 +36,7 @@ class BunkerFillRequest extends Model
         'fill_level' => 'integer',
         'filled_at' => 'datetime',
         'executed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 

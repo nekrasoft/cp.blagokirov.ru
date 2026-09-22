@@ -3,13 +3,18 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BunkerFillRequestResource\Pages\ListBunkerFillRequests;
+use App\Filament\Resources\Concerns\AuthorizesAdminWrites;
 use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Support\DashboardMetrics;
 use App\Models\BunkerFillRequest;
 use App\Models\CounterpartyUser;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -23,6 +28,7 @@ use UnitEnum;
 
 class BunkerFillRequestResource extends Resource
 {
+    use AuthorizesAdminWrites;
     use PreservesNavigationSearch;
 
     protected static ?string $model = BunkerFillRequest::class;
@@ -109,9 +115,19 @@ class BunkerFillRequestResource extends Resource
             $columns[] = TextColumn::make('executed_at')
                 ->label('Исполнение')
                 ->badge()
-                ->formatStateUsing(fn ($state): string => $state ? 'Исполнена '.$state->format('d.m.Y') : 'Не исполнена')
-                ->color(fn ($state): string => $state ? 'success' : 'warning')
+                ->state(fn (BunkerFillRequest $record): string => static::statusLabel($record))
+                ->color(fn (BunkerFillRequest $record): string => $record->cancelled_at ? 'danger' : ($record->executed_at ? 'success' : 'warning'))
                 ->sortable();
+        }
+
+        if (static::hasColumn('cancellation_comment')) {
+            $columns[] = TextColumn::make('cancellation_comment')
+                ->label('Причина отмены')
+                ->state(fn (BunkerFillRequest $record): ?string => $record->cancellation_comment
+                    ?: static::cancellationReasonOptions()[$record->cancellation_reason_code] ?? null)
+                ->placeholder('—')
+                ->wrap()
+                ->toggleable();
         }
 
         $filters = [];
@@ -122,11 +138,49 @@ class BunkerFillRequestResource extends Resource
                 ->relationship('counterparty', static::counterpartyTitleAttribute());
         }
 
+        $recordActions = [];
+        if (! $isCounterparty && static::hasAdminWriteAccess() && static::hasColumn('cancelled_at')) {
+            $recordActions[] = Action::make('cancelRequest')
+                ->label('Отменить')
+                ->icon('heroicon-m-x-circle')
+                ->color('danger')
+                ->visible(fn (BunkerFillRequest $record): bool => ! $record->executed_at && ! $record->cancelled_at)
+                ->requiresConfirmation()
+                ->form([
+                    Select::make('reason_code')
+                        ->label('Причина')
+                        ->options(static::cancellationReasonOptions())
+                        ->required()
+                        ->live(),
+                    Textarea::make('comment')
+                        ->label('Комментарий')
+                        ->maxLength(500)
+                        ->required(fn (Get $get): bool => $get('reason_code') === 'other')
+                        ->visible(fn (Get $get): bool => $get('reason_code') === 'other'),
+                ])
+                ->action(function (BunkerFillRequest $record, array $data): void {
+                    $reasonCode = (string) $data['reason_code'];
+                    $comment = trim((string) ($data['comment'] ?? ''));
+                    BunkerFillRequest::query()
+                        ->whereKey($record->getKey())
+                        ->whereNull('executed_at')
+                        ->whereNull('cancelled_at')
+                        ->update([
+                            'cancelled_at' => now(),
+                            'cancellation_reason_code' => $reasonCode,
+                            'cancellation_comment' => $comment !== ''
+                                ? $comment
+                                : static::cancellationReasonOptions()[$reasonCode],
+                            'cancelled_by' => (string) Filament::auth()->user()?->getAuthIdentifier(),
+                        ]);
+                });
+        }
+
         return $table
             ->defaultSort(static::hasColumn('filled_at') ? 'filled_at' : (static::hasColumn('id') ? 'id' : 'bunker_id'), 'desc')
             ->columns($columns)
             ->filters($filters)
-            ->recordActions([])
+            ->recordActions($recordActions)
             ->toolbarActions([])
             ->emptyStateIcon('heroicon-o-inbox')
             ->emptyStateHeading('Заявок пока нет')
@@ -192,6 +246,29 @@ class BunkerFillRequestResource extends Resource
     public static function canDeleteAny(): bool
     {
         return false;
+    }
+
+    public static function statusLabel(BunkerFillRequest $record): string
+    {
+        if ($record->cancelled_at) {
+            return 'Отменена '.$record->cancelled_at->format('d.m.Y');
+        }
+
+        return $record->executed_at
+            ? 'Исполнена '.$record->executed_at->format('d.m.Y')
+            : 'Не исполнена';
+    }
+
+    public static function cancellationReasonOptions(): array
+    {
+        return [
+            'customer_cancelled' => 'Клиент отменил',
+            'no_access' => 'Нет доступа или подъезда',
+            'not_ready' => 'Бункер не готов',
+            'vehicle_breakdown' => 'Поломка техники',
+            'weather' => 'Погодные условия',
+            'other' => 'Другое',
+        ];
     }
 
     protected static function hasTable(): bool

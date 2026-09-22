@@ -30,17 +30,30 @@ class ListBunkerFillRequests extends ListRecords
         }
 
         if (DashboardMetrics::hasColumn('bunker_fill_requests', 'executed_at')) {
+            $hasCancelledAt = DashboardMetrics::hasColumn('bunker_fill_requests', 'cancelled_at');
             $tabs['pending'] = Tab::make('Не исполнены')
                 ->icon('heroicon-m-clock')
-                ->badge(fn (): int => $this->countRequests(fn (Builder $query): Builder => $query->whereNull('executed_at')))
+                ->badge(fn (): int => $this->countRequests(fn (Builder $query): Builder => $query
+                    ->whereNull('executed_at')
+                    ->when($hasCancelledAt, fn (Builder $query): Builder => $query->whereNull('cancelled_at'))))
                 ->badgeColor('warning')
-                ->query(fn (Builder $query): Builder => $query->whereNull('executed_at'));
+                ->query(fn (Builder $query): Builder => $query
+                    ->whereNull('executed_at')
+                    ->when($hasCancelledAt, fn (Builder $query): Builder => $query->whereNull('cancelled_at')));
 
             $tabs['done'] = Tab::make('Исполнены')
                 ->icon('heroicon-m-check-circle')
                 ->badge(fn (): int => $this->countRequests(fn (Builder $query): Builder => $query->whereNotNull('executed_at')))
                 ->badgeColor('success')
                 ->query(fn (Builder $query): Builder => $query->whereNotNull('executed_at'));
+
+            if ($hasCancelledAt) {
+                $tabs['cancelled'] = Tab::make('Отменены')
+                    ->icon('heroicon-m-x-circle')
+                    ->badge(fn (): int => $this->countRequests(fn (Builder $query): Builder => $query->whereNotNull('cancelled_at')))
+                    ->badgeColor('danger')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('cancelled_at'));
+            }
         }
 
         return $tabs;

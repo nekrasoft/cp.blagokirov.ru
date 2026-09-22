@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\BunkerPickupFileController;
 use App\Http\Controllers\CrossServiceSsoController;
 use App\Http\Controllers\GoogleBusinessProfileOAuthController;
+use App\Http\Middleware\UseCounterpartyDemoDatabase;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,7 +17,17 @@ Route::middleware('auth:counterparty')
     ->group(function (): void {
         Route::get('/billing/sso/map', [CrossServiceSsoController::class, 'redirectToMap'])
             ->name('billing.sso.map');
+        Route::get('/billing/pickup-files/{file}', [BunkerPickupFileController::class, 'counterparty'])
+            ->middleware(UseCounterpartyDemoDatabase::class)
+            ->whereNumber('file')
+            ->name('billing.pickup-files.show');
     });
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('/admin/pickup-files/{file}', [BunkerPickupFileController::class, 'admin'])
+        ->whereNumber('file')
+        ->name('admin.pickup-files.show');
+});
 
 Route::middleware('auth')
     ->prefix('admin/integrations/google-business-profile/oauth')

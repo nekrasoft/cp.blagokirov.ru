@@ -15,6 +15,7 @@ class Counterparty extends Model
 
     protected $casts = [
         'bitrix_company_id' => 'integer',
+        'requires_container_waybill' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

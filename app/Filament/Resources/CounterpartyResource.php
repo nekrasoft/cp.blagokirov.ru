@@ -18,6 +18,7 @@ use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -138,6 +139,12 @@ class CounterpartyResource extends Resource
                 ->required();
         }
 
+        if (static::hasColumn('requires_container_waybill')) {
+            $components[] = Toggle::make('requires_container_waybill')
+                ->label('Требовать подписанный талон при вывозе бункеров')
+                ->default(false);
+        }
+
         if (static::hasColumn('status')) {
             $components[] = TextInput::make('status')
                 ->label('Статус')
@@ -250,6 +257,15 @@ class CounterpartyResource extends Resource
                 ->label('Тип операции')
                 ->formatStateUsing(fn (?string $state): string => static::operationTypeLabel($state))
                 ->searchable()
+                ->toggleable();
+        }
+
+        if (static::hasColumn('requires_container_waybill')) {
+            $columns[] = TextColumn::make('requires_container_waybill')
+                ->label('Талон')
+                ->formatStateUsing(fn (bool $state): string => $state ? 'Обязателен' : 'Не требуется')
+                ->badge()
+                ->color(fn (bool $state): string => $state ? 'warning' : 'gray')
                 ->toggleable();
         }
 
