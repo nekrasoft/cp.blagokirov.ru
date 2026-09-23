@@ -33,6 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->favicon(asset('favicon.svg'))
             ->brandName('БлагоСервис')
+            ->navigationGroups([
+                'Панель',
+                'Карта бункеров',
+                'Биллинг',
+                'Водители',
+            ])
             ->login()
             ->renderHook(
                 TablesRenderHook::SELECTION_INDICATOR_ACTIONS_BEFORE,
