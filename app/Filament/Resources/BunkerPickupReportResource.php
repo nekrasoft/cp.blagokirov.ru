@@ -11,8 +11,8 @@ use App\Models\CounterpartyUser;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -78,20 +78,29 @@ class BunkerPickupReportResource extends Resource
                 ->columnSpanFull(),
             Section::make('Фото и документы')
                 ->schema([
-                    RepeatableEntry::make('files')
+                    ViewEntry::make('files')
                         ->hiddenLabel()
-                        ->schema([
-                            TextEntry::make('kind')
-                                ->label('Тип')
-                                ->formatStateUsing(fn (string $state): string => $state === 'container_waybill' ? 'Талон' : 'Фото площадки'),
-                            TextEntry::make('file_name')
-                                ->label('Файл')
-                                ->url(fn (BunkerPickupFile $record): string => static::fileUrl($record), true),
-                            TextEntry::make('file_size')
-                                ->label('Размер')
-                                ->formatStateUsing(fn (int $state): string => number_format($state / 1024 / 1024, 2, ',', ' ').' МБ'),
-                        ])
-                        ->columns(3),
+                        ->view('filament.infolists.components.bunker-pickup-files')
+                        ->viewData(function (BunkerPickupReport $record): array {
+                            $photoIndex = 0;
+                            $files = $record->files->map(function (BunkerPickupFile $file) use (&$photoIndex): array {
+                                $isPhoto = $file->kind === 'site_photo';
+
+                                return [
+                                    'kind' => $file->kind,
+                                    'name' => $file->file_name,
+                                    'size' => $file->file_size,
+                                    'url' => static::fileUrl($file),
+                                    'photoIndex' => $isPhoto ? $photoIndex++ : null,
+                                ];
+                            })->all();
+
+                            return [
+                                'reportId' => $record->getKey(),
+                                'files' => $files,
+                                'photos' => array_values(array_filter($files, fn (array $file): bool => $file['kind'] === 'site_photo')),
+                            ];
+                        }),
                 ])
                 ->columnSpanFull(),
         ]);
