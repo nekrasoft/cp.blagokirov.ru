@@ -2,10 +2,19 @@
 
 namespace Tests\Unit;
 
+use App\Filament\Resources\BunkerPickupReportResource;
+use Filament\Schemas\Schema;
 use Tests\TestCase;
 
 class BunkerPickupGalleryTest extends TestCase
 {
+    public function test_report_infolist_schema_can_be_built(): void
+    {
+        BunkerPickupReportResource::infolist(Schema::make());
+
+        $this->addToAssertionCount(1);
+    }
+
     public function test_site_photos_open_in_a_navigable_modal(): void
     {
         $photos = [

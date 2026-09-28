@@ -11,6 +11,7 @@ use App\Models\CounterpartyUser;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
