@@ -28,8 +28,19 @@
             <div>
                 <div class="pickup-files__label">Файл</div>
                 @if ($file['kind'] === 'site_photo')
-                    <button type="button" class="pickup-files__link" x-on:click="openPhoto({{ $file['photoIndex'] }})">
-                        {{ $file['name'] }}
+                    <button
+                        type="button"
+                        class="pickup-files__thumbnail-button"
+                        aria-label="Открыть фото: {{ $file['name'] }}"
+                        x-on:click="openPhoto({{ $file['photoIndex'] }})"
+                    >
+                        <img
+                            class="pickup-files__thumbnail"
+                            src="{{ $file['url'] }}"
+                            alt="{{ $file['name'] }}"
+                            loading="lazy"
+                        >
+                        <span class="pickup-files__filename">{{ $file['name'] }}</span>
                     </button>
                 @else
                     <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
@@ -84,6 +95,9 @@
         .pickup-files__row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; border: 1px solid rgb(148 163 184 / .25); border-radius: .75rem; }
         .pickup-files__label { margin-bottom: .5rem; font-weight: 600; }
         .pickup-files__link { color: rgb(37 99 235); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+        .pickup-files__thumbnail-button { display: grid; gap: .35rem; justify-items: start; cursor: pointer; text-align: left; }
+        .pickup-files__thumbnail { width: 10rem; height: 6rem; border-radius: .5rem; object-fit: cover; }
+        .pickup-files__filename { max-width: 10rem; overflow: hidden; color: rgb(37 99 235); font-size: .875rem; text-overflow: ellipsis; white-space: nowrap; }
         .pickup-photo-viewer { position: relative; display: flex; min-height: 60vh; align-items: center; justify-content: center; overflow: hidden; border-radius: .5rem; background: #111827; }
         .pickup-photo-viewer__image { display: block; max-height: 72vh; max-width: 100%; object-fit: contain; }
         .pickup-photo-viewer__previous, .pickup-photo-viewer__next { position: absolute; top: 50%; z-index: 1; transform: translateY(-50%); background: rgb(255 255 255 / .9); }

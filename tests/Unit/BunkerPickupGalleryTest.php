@@ -30,6 +30,9 @@ class BunkerPickupGalleryTest extends TestCase
         $this->assertStringContainsString('pickup-photo-gallery-42', $html);
         $this->assertStringContainsString('openPhoto(0)', $html);
         $this->assertStringContainsString('openPhoto(1)', $html);
+        $this->assertStringContainsString('class="pickup-files__thumbnail"', $html);
+        $this->assertStringContainsString('src="/photos/1"', $html);
+        $this->assertStringContainsString('src="/photos/2"', $html);
         $this->assertStringContainsString('Предыдущее фото', $html);
         $this->assertStringContainsString('Следующее фото', $html);
         $this->assertStringContainsString('href="/files/3"', $html);
