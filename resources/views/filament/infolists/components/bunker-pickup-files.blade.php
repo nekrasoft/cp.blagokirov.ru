@@ -19,25 +19,6 @@
     x-on:close-modal.window="if ($event.detail.id === @js($modalId)) viewerOpen = false"
     x-on:close-modal-quietly.window="if ($event.detail.id === @js($modalId)) viewerOpen = false"
 >
-    @foreach ($files as $file)
-        @if ($file['kind'] === 'container_waybill')
-            <div class="pickup-files__row">
-                <div>
-                    <div class="pickup-files__label">Тип</div>
-                    <div>Талон</div>
-                </div>
-                <div>
-                    <div class="pickup-files__label">Файл</div>
-                    <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
-                </div>
-                <div>
-                    <div class="pickup-files__label">Размер</div>
-                    <div>{{ number_format($file['size'] / 1024 / 1024, 2, ',', ' ') }} МБ</div>
-                </div>
-            </div>
-        @endif
-    @endforeach
-
     @if ($photos !== [])
         <div class="pickup-files__gallery">
             @foreach ($photos as $photo)
@@ -91,6 +72,25 @@
             </div>
         </x-filament::modal>
     @endif
+
+    @foreach ($files as $file)
+        @if ($file['kind'] === 'container_waybill')
+            <div class="pickup-files__row">
+                <div>
+                    <div class="pickup-files__label">Тип</div>
+                    <div>Талон</div>
+                </div>
+                <div>
+                    <div class="pickup-files__label">Файл</div>
+                    <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
+                </div>
+                <div>
+                    <div class="pickup-files__label">Размер</div>
+                    <div>{{ number_format($file['size'] / 1024 / 1024, 2, ',', ' ') }} МБ</div>
+                </div>
+            </div>
+        @endif
+    @endforeach
 </div>
 
 @once

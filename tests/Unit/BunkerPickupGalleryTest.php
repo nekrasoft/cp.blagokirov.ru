@@ -39,6 +39,7 @@ class BunkerPickupGalleryTest extends TestCase
         $this->assertStringContainsString('Предыдущее фото', $html);
         $this->assertStringContainsString('Следующее фото', $html);
         $this->assertStringContainsString('href="/files/3"', $html);
+        $this->assertLessThan(strpos($html, 'href="/files/3"'), strpos($html, 'class="pickup-files__gallery"'));
         $this->assertStringNotContainsString('target="_blank"', $html);
     }
 }
