@@ -90,6 +90,7 @@ class BunkerPickupReportResource extends Resource
                                 return [
                                     'kind' => $file->kind,
                                     'name' => $file->file_name,
+                                    'size' => $file->file_size,
                                     'url' => static::fileUrl($file),
                                     'photoIndex' => $isPhoto ? $photoIndex++ : null,
                                 ];
