@@ -11,7 +11,6 @@ use App\Models\CounterpartyUser;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
@@ -67,14 +66,16 @@ class BunkerPickupReportResource extends Resource
                 ->columnSpanFull(),
             Section::make('Бункеры')
                 ->schema([
-                    RepeatableEntry::make('items')
+                    ViewEntry::make('items')
                         ->hiddenLabel()
-                        ->schema([
-                            TextEntry::make('bunker_number')->label('№ бункера'),
-                            TextEntry::make('billing_units')->label('Количество'),
-                            TextEntry::make('estimated_volume_m3')->label('Расчётный объём')->suffix(' м³'),
-                        ])
-                        ->columns(3),
+                        ->view('filament.infolists.components.bunker-pickup-items')
+                        ->viewData(fn (BunkerPickupReport $record): array => [
+                            'items' => $record->items->map(fn ($item): array => [
+                                'number' => $item->bunker_number,
+                                'quantity' => $item->billing_units,
+                                'volume' => $item->estimated_volume_m3,
+                            ])->all(),
+                        ]),
                 ])
                 ->columnSpanFull(),
             Section::make('Фото и документы')

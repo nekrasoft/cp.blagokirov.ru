@@ -15,6 +15,21 @@ class BunkerPickupGalleryTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function test_bunkers_are_rendered_as_a_compact_table(): void
+    {
+        $html = view('filament.infolists.components.bunker-pickup-items', [
+            'items' => [
+                ['number' => 21, 'quantity' => '1.00', 'volume' => '8.00'],
+                ['number' => 23, 'quantity' => '1.50', 'volume' => '12.00'],
+            ],
+        ])->render();
+
+        $this->assertSame(1, substr_count($html, '№ бункера'));
+        $this->assertSame(2, substr_count($html, '<tr>') - 1);
+        $this->assertStringContainsString('<td>23</td>', $html);
+        $this->assertStringContainsString('<td>12.00 м³</td>', $html);
+    }
+
     public function test_site_photos_open_in_a_navigable_modal(): void
     {
         $photos = [
