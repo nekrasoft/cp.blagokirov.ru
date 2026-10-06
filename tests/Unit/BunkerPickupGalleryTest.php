@@ -18,12 +18,12 @@ class BunkerPickupGalleryTest extends TestCase
     public function test_site_photos_open_in_a_navigable_modal(): void
     {
         $photos = [
-            ['kind' => 'site_photo', 'name' => 'first.jpg', 'size' => 1000, 'url' => '/photos/1', 'photoIndex' => 0],
-            ['kind' => 'site_photo', 'name' => 'second.jpg', 'size' => 2000, 'url' => '/photos/2', 'photoIndex' => 1],
+            ['kind' => 'site_photo', 'name' => 'first.jpg', 'url' => '/photos/1', 'photoIndex' => 0],
+            ['kind' => 'site_photo', 'name' => 'second.jpg', 'url' => '/photos/2', 'photoIndex' => 1],
         ];
         $html = view('filament.infolists.components.bunker-pickup-files', [
             'reportId' => 42,
-            'files' => [...$photos, ['kind' => 'container_waybill', 'name' => 'waybill.pdf', 'size' => 3000, 'url' => '/files/3', 'photoIndex' => null]],
+            'files' => [...$photos, ['kind' => 'container_waybill', 'name' => 'waybill.pdf', 'url' => '/files/3', 'photoIndex' => null]],
             'photos' => $photos,
         ])->render();
 
@@ -33,6 +33,9 @@ class BunkerPickupGalleryTest extends TestCase
         $this->assertStringContainsString('class="pickup-files__thumbnail"', $html);
         $this->assertStringContainsString('src="/photos/1"', $html);
         $this->assertStringContainsString('src="/photos/2"', $html);
+        $this->assertSame(3, substr_count($html, 'class="pickup-files__item"'));
+        $this->assertStringNotContainsString('>Тип<', $html);
+        $this->assertStringNotContainsString('>Размер<', $html);
         $this->assertStringContainsString('Предыдущее фото', $html);
         $this->assertStringContainsString('Следующее фото', $html);
         $this->assertStringContainsString('href="/files/3"', $html);

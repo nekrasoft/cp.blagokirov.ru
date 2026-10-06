@@ -20,36 +20,25 @@
     x-on:close-modal-quietly.window="if ($event.detail.id === @js($modalId)) viewerOpen = false"
 >
     @foreach ($files as $file)
-        <div class="pickup-files__row">
-            <div>
-                <div class="pickup-files__label">Тип</div>
-                <div>{{ $file['kind'] === 'container_waybill' ? 'Талон' : 'Фото площадки' }}</div>
-            </div>
-            <div>
-                <div class="pickup-files__label">Файл</div>
-                @if ($file['kind'] === 'site_photo')
-                    <button
-                        type="button"
-                        class="pickup-files__thumbnail-button"
-                        aria-label="Открыть фото: {{ $file['name'] }}"
-                        x-on:click="openPhoto({{ $file['photoIndex'] }})"
+        <div class="pickup-files__item">
+            @if ($file['kind'] === 'site_photo')
+                <button
+                    type="button"
+                    class="pickup-files__thumbnail-button"
+                    aria-label="Открыть фото: {{ $file['name'] }}"
+                    x-on:click="openPhoto({{ $file['photoIndex'] }})"
+                >
+                    <img
+                        class="pickup-files__thumbnail"
+                        src="{{ $file['url'] }}"
+                        alt="{{ $file['name'] }}"
+                        loading="lazy"
                     >
-                        <img
-                            class="pickup-files__thumbnail"
-                            src="{{ $file['url'] }}"
-                            alt="{{ $file['name'] }}"
-                            loading="lazy"
-                        >
-                        <span class="pickup-files__filename">{{ $file['name'] }}</span>
-                    </button>
-                @else
-                    <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
-                @endif
-            </div>
-            <div>
-                <div class="pickup-files__label">Размер</div>
-                <div>{{ number_format($file['size'] / 1024 / 1024, 2, ',', ' ') }} МБ</div>
-            </div>
+                    <span class="pickup-files__filename">{{ $file['name'] }}</span>
+                </button>
+            @else
+                <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
+            @endif
         </div>
     @endforeach
 
@@ -91,9 +80,8 @@
 
 @once
     <style>
-        .pickup-files { display: grid; gap: .75rem; }
-        .pickup-files__row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; border: 1px solid rgb(148 163 184 / .25); border-radius: .75rem; }
-        .pickup-files__label { margin-bottom: .5rem; font-weight: 600; }
+        .pickup-files { display: grid; grid-template-columns: repeat(auto-fill, 10rem); gap: 1rem; }
+        .pickup-files__item { min-width: 0; }
         .pickup-files__link { color: rgb(37 99 235); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .pickup-files__thumbnail-button { display: grid; gap: .35rem; justify-items: start; cursor: pointer; text-align: left; }
         .pickup-files__thumbnail { width: 10rem; height: 6rem; border-radius: .5rem; object-fit: cover; }
@@ -104,6 +92,5 @@
         .pickup-photo-viewer__previous { left: 1rem; }
         .pickup-photo-viewer__next { right: 1rem; }
         .pickup-photo-viewer__caption { display: flex; justify-content: space-between; gap: 1rem; padding-top: .75rem; }
-        @media (max-width: 640px) { .pickup-files__row { grid-template-columns: 1fr; } }
     </style>
 @endonce
