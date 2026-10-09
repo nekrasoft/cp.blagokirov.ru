@@ -60,6 +60,11 @@ class BunkerPickupReportResource extends Resource
                         ->state(fn (BunkerPickupReport $record): string => static::waybillStatus($record))
                         ->badge()
                         ->color(fn (BunkerPickupReport $record): string => $record->waybill_required && $record->waybills->isEmpty() ? 'warning' : 'success'),
+                    TextEntry::make('sheets_status')->label('Расчётная таблица')
+                        ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
+                        ->formatStateUsing(fn (?string $state): string => static::sheetsStatusLabel($state))->placeholder('—'),
+                    TextEntry::make('sheets_error')->label('Доставка в таблицу')->placeholder('—')
+                        ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser)),
                     TextEntry::make('waybill_missing_reason')->label('Причина отсутствия талона')->placeholder('—'),
                 ])
                 ->columns(2)
@@ -117,6 +122,10 @@ class BunkerPickupReportResource extends Resource
                 TextColumn::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i')->sortable(),
                 TextColumn::make('contractor')->label('Контрагент')->searchable()->sortable(),
                 TextColumn::make('items_count')->label('Бункеров')->counts('items'),
+                TextColumn::make('sheets_status')->label('Расчётная таблица')->badge()
+                    ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
+                    ->formatStateUsing(fn (?string $state): string => static::sheetsStatusLabel($state))
+                    ->color(fn (?string $state): string => $state === 'sent' ? 'success' : 'warning'),
                 TextColumn::make('billing_units')->label('Количество')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' '))->sortable(),
                 TextColumn::make('driver_name')->label('Водитель')->placeholder('—')->toggleable(),
                 TextColumn::make('cleanup_status')
@@ -194,6 +203,17 @@ class BunkerPickupReportResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return false;
+    }
+
+    public static function sheetsStatusLabel(?string $status): string
+    {
+        return match ($status) {
+            'pending' => 'В очереди',
+            'sending' => 'Отправляется',
+            'retry' => 'Ожидает повторной доставки',
+            'sent' => 'Доставлен',
+            default => '—',
+        };
     }
 
     public static function cleanupLabel(string $status): string

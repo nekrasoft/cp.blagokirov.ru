@@ -17,6 +17,8 @@ class ListBunkerPickupReports extends ListRecords
             'all' => Tab::make('Все'),
             'missing_waybill' => Tab::make('Без обязательного талона')
                 ->query(fn (Builder $query): Builder => $query->where('waybill_required', true)->whereDoesntHave('waybills')),
+            'pending_delivery' => Tab::make('Ожидают записи в таблицу')
+                ->query(fn (Builder $query): Builder => $query->whereIn('sheets_status', ['pending', 'sending', 'retry'])),
             'not_cleaned' => Tab::make('Территория не прибрана')
                 ->query(fn (Builder $query): Builder => $query->where('cleanup_status', 'not_cleaned')),
         ];
