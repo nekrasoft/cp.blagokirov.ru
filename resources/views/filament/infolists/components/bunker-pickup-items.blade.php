@@ -1,3 +1,24 @@
+@php
+    $count = count($items);
+    $quantity = round(array_sum(array_column($items, 'quantity')), 2);
+    $volume = round(array_sum(array_column($items, 'volume')), 2);
+    $format = fn ($value) => rtrim(rtrim(number_format($value, 2, ',', ' '), '0'), ',');
+    $plural = function ($value, $one, $few, $many) {
+        if ($value != floor($value)) {
+            return $few;
+        }
+        $value = (int) $value;
+        return $value % 100 >= 11 && $value % 100 <= 14 ? $many
+            : ($value % 10 === 1 ? $one : ($value % 10 >= 2 && $value % 10 <= 4 ? $few : $many));
+    };
+@endphp
+
+<div style="margin-bottom: .75rem;">
+    Вывезено: <strong>{{ $count }} {{ $plural($count, 'бункер', 'бункера', 'бункеров') }}</strong>
+    · К оплате: <strong>{{ $format($quantity) }} {{ $plural($quantity, 'единица', 'единицы', 'единиц') }}</strong>
+    · Расчётный объём: <strong>{{ $format($volume) }} м³</strong>
+</div>
+
 <div class="pickup-items-table-wrap">
     <table class="pickup-items-table">
         <thead>

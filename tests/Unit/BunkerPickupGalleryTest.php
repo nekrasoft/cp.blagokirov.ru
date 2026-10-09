@@ -21,11 +21,15 @@ class BunkerPickupGalleryTest extends TestCase
             'items' => [
                 ['number' => 21, 'quantity' => '1.00', 'volume' => '8.00'],
                 ['number' => 23, 'quantity' => '1.50', 'volume' => '12.00'],
+                ['number' => 24, 'quantity' => '1.00', 'volume' => '8.00'],
             ],
         ])->render();
 
         $this->assertSame(1, substr_count($html, '№ бункера'));
-        $this->assertSame(2, substr_count($html, '<tr>') - 1);
+        $this->assertSame(3, substr_count($html, '<tr>') - 1);
+        $this->assertStringContainsString('<strong>3 бункера</strong>', $html);
+        $this->assertStringContainsString('<strong>3,5 единицы</strong>', $html);
+        $this->assertStringContainsString('<strong>28 м³</strong>', $html);
         $this->assertStringContainsString('23', $html);
         $this->assertStringContainsString('<td>12,00 м³</td>', $html);
     }
