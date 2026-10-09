@@ -147,7 +147,14 @@ class BunkerFillRequestResource extends Resource
                 ->relationship('counterparty', static::counterpartyTitleAttribute());
         }
 
-        $recordActions = [];
+        $recordActions = [
+            Action::make('pickupReport')
+                ->label('Отчёт о вывозе')
+                ->visible(fn (BunkerFillRequest $record): bool => $record->pickupItem !== null)
+                ->url(fn (BunkerFillRequest $record): ?string => $record->pickupItem
+                    ? BunkerPickupReportResource::getUrl('view', ['record' => $record->pickupItem->report_id])
+                    : null),
+        ];
         if (! $isCounterparty && static::hasAdminWriteAccess() && static::hasColumn('cancelled_at')) {
             $recordActions[] = Action::make('cancelRequest')
                 ->label('Отменить')
@@ -215,7 +222,7 @@ class BunkerFillRequestResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with('pickupItem');
         $counterpartyUser = static::getAuthenticatedCounterpartyUser();
 
         if (! $counterpartyUser) {

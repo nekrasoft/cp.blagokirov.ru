@@ -10,7 +10,13 @@
         <tbody>
             @foreach ($items as $item)
                 <tr>
-                    <td>{{ $item['number'] }}</td>
+                    <td>
+                        @if (!empty($item['mapUrl']))
+                            <a href="{{ $item['mapUrl'] }}" target="_blank" rel="noopener noreferrer" style="color: rgb(37 99 235); text-decoration: underline;">{{ $item['number'] }} ↗</a>
+                        @else
+                            {{ $item['number'] }}
+                        @endif
+                    </td>
                     <td>{{ $item['quantity'] }}</td>
                     <td>{{ $item['volume'] }} м³</td>
                 </tr>

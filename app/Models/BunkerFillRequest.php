@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BunkerFillRequest extends Model
 {
@@ -39,6 +40,11 @@ class BunkerFillRequest extends Model
         'cancelled_at' => 'datetime',
         'created_at' => 'datetime',
     ];
+
+    public function pickupItem(): HasOne
+    {
+        return $this->hasOne(BunkerPickupItem::class, 'request_id');
+    }
 
     public function counterparty(): BelongsTo
     {

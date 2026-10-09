@@ -72,6 +72,7 @@ class BunkerPickupReportResource extends Resource
                         ->viewData(fn (BunkerPickupReport $record): array => [
                             'items' => $record->items->map(fn ($item): array => [
                                 'number' => $item->bunker_number,
+                                'mapUrl' => rtrim(config('services.cross_service_sso.map_service_url'), '/').'/?bunker='.rawurlencode($item->bunker_id),
                                 'quantity' => $item->billing_units,
                                 'volume' => $item->estimated_volume_m3,
                             ])->all(),
