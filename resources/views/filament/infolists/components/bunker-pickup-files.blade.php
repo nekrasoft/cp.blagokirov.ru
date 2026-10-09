@@ -6,6 +6,7 @@
         photos: @js($photos),
         current: 0,
         viewerOpen: false,
+        touchStart: null,
         openPhoto(index) {
             this.current = index
             this.viewerOpen = true
@@ -13,6 +14,20 @@
         },
         previous() { this.current = (this.current - 1 + this.photos.length) % this.photos.length },
         next() { this.current = (this.current + 1) % this.photos.length },
+        startSwipe(event) {
+            this.touchStart = event.touches.length === 1
+                ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
+                : null
+        },
+        finishSwipe(event) {
+            const start = this.touchStart
+            this.touchStart = null
+            if (!start || event.touches.length || event.changedTouches.length !== 1 || this.photos.length < 2) return
+            const dx = event.changedTouches[0].clientX - start.x
+            const dy = event.changedTouches[0].clientY - start.y
+            if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return
+            dx < 0 ? this.next() : this.previous()
+        },
     }"
     x-on:keydown.left.window="if (viewerOpen && photos.length > 1) previous()"
     x-on:keydown.right.window="if (viewerOpen && photos.length > 1) next()"
@@ -40,7 +55,12 @@
         </div>
 
         <x-filament::modal :id="$modalId" width="7xl" heading="Фото площадки">
-            <div class="pickup-photo-viewer">
+            <div
+                class="pickup-photo-viewer"
+                x-on:touchstart.passive="startSwipe($event)"
+                x-on:touchend="finishSwipe($event)"
+                x-on:touchcancel="touchStart = null"
+            >
                 <img
                     class="pickup-photo-viewer__image"
                     x-bind:src="photos[current]?.url"
@@ -105,9 +125,10 @@
         .pickup-files__thumbnail-button { display: grid; gap: .35rem; justify-items: start; cursor: pointer; text-align: left; }
         .pickup-files__thumbnail { width: 10rem; height: 6rem; border-radius: .5rem; object-fit: cover; }
         .pickup-files__filename { max-width: 10rem; overflow: hidden; color: rgb(37 99 235); font-size: .875rem; text-overflow: ellipsis; white-space: nowrap; }
-        .pickup-photo-viewer { position: relative; display: flex; min-height: 60vh; align-items: center; justify-content: center; overflow: hidden; border-radius: .5rem; background: #111827; }
+        .pickup-photo-viewer { position: relative; display: flex; min-height: 60vh; align-items: center; justify-content: center; overflow: hidden; border-radius: .5rem; background: #111827; touch-action: pan-y pinch-zoom; }
         .pickup-photo-viewer__image { display: block; max-height: 72vh; max-width: 100%; object-fit: contain; }
-        .pickup-photo-viewer__previous, .pickup-photo-viewer__next { position: absolute; top: 50%; z-index: 1; transform: translateY(-50%); background: rgb(255 255 255 / .9); }
+        .pickup-photo-viewer__previous, .pickup-photo-viewer__next { position: absolute; top: 50%; z-index: 1; min-width: 44px; min-height: 44px; transform: translateY(-50%); background: rgb(255 255 255 / .9); }
+        [id^="pickup-photo-gallery-"] .fi-modal-close-btn { min-width: 44px; min-height: 44px; }
         .pickup-photo-viewer__previous { left: 1rem; }
         .pickup-photo-viewer__next { right: 1rem; }
         .pickup-photo-viewer__caption { display: flex; justify-content: space-between; gap: 1rem; padding-top: .75rem; }
