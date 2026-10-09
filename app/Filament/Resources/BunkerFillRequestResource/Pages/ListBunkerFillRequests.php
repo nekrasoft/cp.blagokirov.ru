@@ -13,11 +13,6 @@ class ListBunkerFillRequests extends ListRecords
 {
     protected static string $resource = BunkerFillRequestResource::class;
 
-    public function getBreadcrumb(): string
-    {
-        return 'Список';
-    }
-
     public function getTabs(): array
     {
         $tabs = [
