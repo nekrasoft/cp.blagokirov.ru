@@ -31,7 +31,7 @@ class ListBunkerFillRequests extends ListRecords
 
         if (DashboardMetrics::hasColumn('bunker_fill_requests', 'executed_at')) {
             $hasCancelledAt = DashboardMetrics::hasColumn('bunker_fill_requests', 'cancelled_at');
-            $tabs['pending'] = Tab::make('Не исполнены')
+            $tabs['pending'] = Tab::make('Активные заявки')
                 ->icon('heroicon-m-clock')
                 ->badge(fn (): int => $this->countRequests(fn (Builder $query): Builder => $query
                     ->whereNull('executed_at')

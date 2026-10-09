@@ -130,6 +130,15 @@ class BunkerFillRequestResource extends Resource
                 ->toggleable();
         }
 
+        if (static::hasColumn('filled_at') && static::hasColumn('executed_at') && static::hasColumn('cancelled_at')) {
+            $columns[] = TextColumn::make('request_age')
+                ->label('Ожидает')
+                ->state(fn (BunkerFillRequest $record): ?string => ! $record->executed_at && ! $record->cancelled_at
+                    ? $record->filled_at?->diffForHumans(now(), true)
+                    : null)
+                ->placeholder('—');
+        }
+
         $filters = [];
 
         if (! $isCounterparty && static::hasColumn('counterparty_id') && static::hasCounterpartiesTable()) {
