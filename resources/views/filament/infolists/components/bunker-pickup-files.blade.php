@@ -112,6 +112,12 @@
         .pickup-photo-viewer__caption { display: flex; justify-content: space-between; gap: 1rem; padding-top: .75rem; }
         .pickup-photo-viewer__caption > :first-child { min-width: 0; overflow-wrap: anywhere; }
         .pickup-photo-viewer__caption > :last-child { flex-shrink: 0; }
-        @media (max-width: 640px) { .pickup-files__row { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) {
+            .pickup-files__row { grid-template-columns: 1fr; }
+            .pickup-files__gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+            .pickup-files__thumbnail-button { min-width: 0; width: 100%; }
+            .pickup-files__thumbnail { width: 100%; }
+            .pickup-files__filename { max-width: 100%; }
+        }
     </style>
 @endonce
