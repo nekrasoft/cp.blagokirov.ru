@@ -76,15 +76,15 @@
     @foreach ($files as $file)
         @if ($file['kind'] === 'container_waybill')
             <div class="pickup-files__row">
-                <div>
+                <div class="pickup-files__document-type">
                     <div class="pickup-files__label">Тип</div>
                     <div>Талон</div>
                 </div>
-                <div>
+                <div class="pickup-files__document-name">
                     <div class="pickup-files__label">Файл</div>
-                    <a class="pickup-files__link" href="{{ $file['url'] }}">{{ $file['name'] }}</a>
+                    <a class="pickup-files__link" href="{{ $file['url'] }}"><span class="pickup-files__document-mobile-label">Талон: </span>{{ $file['name'] }}</a>
                 </div>
-                <div>
+                <div class="pickup-files__document-size">
                     <div class="pickup-files__label">Размер</div>
                     <div>{{ number_format($file['size'] / 1024 / 1024, 2, ',', ' ') }} МБ</div>
                 </div>
@@ -99,6 +99,7 @@
         .pickup-files > *, .pickup-files__row > * { min-width: 0; }
         .pickup-files__row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; border: 1px solid rgb(148 163 184 / .25); border-radius: .75rem; }
         .pickup-files__label { margin-bottom: .5rem; font-weight: 600; }
+        .pickup-files__document-mobile-label { display: none; }
         .pickup-files__gallery { display: grid; grid-template-columns: repeat(auto-fill, 10rem); gap: 1rem; }
         .pickup-files__link { color: rgb(37 99 235); cursor: pointer; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 2px; }
         .pickup-files__thumbnail-button { display: grid; gap: .35rem; justify-items: start; cursor: pointer; text-align: left; }
@@ -113,7 +114,11 @@
         .pickup-photo-viewer__caption > :first-child { min-width: 0; overflow-wrap: anywhere; }
         .pickup-photo-viewer__caption > :last-child { flex-shrink: 0; }
         @media (max-width: 640px) {
-            .pickup-files__row { grid-template-columns: 1fr; }
+            .pickup-files__row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .75rem; }
+            .pickup-files__document-type, .pickup-files__row .pickup-files__label { display: none; }
+            .pickup-files__document-mobile-label { display: inline; }
+            .pickup-files__document-size { white-space: nowrap; font-size: .75rem; }
+            .pickup-files__link { display: flex; min-height: 44px; align-items: center; }
             .pickup-files__gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
             .pickup-files__thumbnail-button { min-width: 0; width: 100%; }
             .pickup-files__thumbnail { width: 100%; }
