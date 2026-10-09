@@ -95,11 +95,12 @@
 
 @once
     <style>
-        .pickup-files { display: grid; gap: .75rem; }
+        .pickup-files { display: grid; min-width: 0; gap: .75rem; }
+        .pickup-files > *, .pickup-files__row > * { min-width: 0; }
         .pickup-files__row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; border: 1px solid rgb(148 163 184 / .25); border-radius: .75rem; }
         .pickup-files__label { margin-bottom: .5rem; font-weight: 600; }
         .pickup-files__gallery { display: grid; grid-template-columns: repeat(auto-fill, 10rem); gap: 1rem; }
-        .pickup-files__link { color: rgb(37 99 235); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+        .pickup-files__link { color: rgb(37 99 235); cursor: pointer; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 2px; }
         .pickup-files__thumbnail-button { display: grid; gap: .35rem; justify-items: start; cursor: pointer; text-align: left; }
         .pickup-files__thumbnail { width: 10rem; height: 6rem; border-radius: .5rem; object-fit: cover; }
         .pickup-files__filename { max-width: 10rem; overflow: hidden; color: rgb(37 99 235); font-size: .875rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -109,6 +110,8 @@
         .pickup-photo-viewer__previous { left: 1rem; }
         .pickup-photo-viewer__next { right: 1rem; }
         .pickup-photo-viewer__caption { display: flex; justify-content: space-between; gap: 1rem; padding-top: .75rem; }
+        .pickup-photo-viewer__caption > :first-child { min-width: 0; overflow-wrap: anywhere; }
+        .pickup-photo-viewer__caption > :last-child { flex-shrink: 0; }
         @media (max-width: 640px) { .pickup-files__row { grid-template-columns: 1fr; } }
     </style>
 @endonce
