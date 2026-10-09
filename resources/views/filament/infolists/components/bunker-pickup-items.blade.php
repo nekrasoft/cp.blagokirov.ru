@@ -24,8 +24,8 @@
         <thead>
             <tr>
                 <th>№ бункера</th>
-                <th>Количество</th>
-                <th>Расчётный объём</th>
+                <th><span class="pickup-items-label-full">Количество</span><span class="pickup-items-label-mobile">Кол-во</span></th>
+                <th><span class="pickup-items-label-full">Расчётный объём</span><span class="pickup-items-label-mobile">Объём, м³</span></th>
             </tr>
         </thead>
         <tbody>
@@ -53,5 +53,11 @@
         .pickup-items-table th, .pickup-items-table td { padding: .625rem 1rem; text-align: left; white-space: nowrap; }
         .pickup-items-table th { font-weight: 600; }
         .pickup-items-table tbody tr { border-top: 1px solid rgb(148 163 184 / .25); }
+        .pickup-items-label-mobile { display: none; }
+        @media (max-width: 640px) {
+            .pickup-items-table th, .pickup-items-table td { padding: .625rem .375rem; }
+            .pickup-items-label-full { display: none; }
+            .pickup-items-label-mobile { display: inline; }
+        }
     </style>
 @endonce
