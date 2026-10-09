@@ -27,7 +27,7 @@ class BunkerPickupGalleryTest extends TestCase
         $this->assertSame(1, substr_count($html, '№ бункера'));
         $this->assertSame(2, substr_count($html, '<tr>') - 1);
         $this->assertStringContainsString('23', $html);
-        $this->assertStringContainsString('<td>12.00 м³</td>', $html);
+        $this->assertStringContainsString('<td>12,00 м³</td>', $html);
     }
 
     public function test_site_photos_open_in_a_navigable_modal(): void

@@ -17,8 +17,8 @@
                             {{ $item['number'] }}
                         @endif
                     </td>
-                    <td>{{ $item['quantity'] }}</td>
-                    <td>{{ $item['volume'] }} м³</td>
+                    <td>{{ number_format((float) $item['quantity'], 2, ',', ' ') }}</td>
+                    <td>{{ number_format((float) $item['volume'], 2, ',', ' ') }} м³</td>
                 </tr>
             @endforeach
         </tbody>

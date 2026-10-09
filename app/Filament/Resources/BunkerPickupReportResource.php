@@ -50,7 +50,7 @@ class BunkerPickupReportResource extends Resource
                     TextEntry::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i'),
                     TextEntry::make('contractor')->label('Контрагент'),
                     TextEntry::make('driver_name')->label('Водитель')->placeholder('Не указан'),
-                    TextEntry::make('billing_units')->label('Количество к оплате'),
+                    TextEntry::make('billing_units')->label('Количество к оплате')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' ')),
                     TextEntry::make('cleanup_status')
                         ->label('Уборка')
                         ->formatStateUsing(fn (string $state): string => static::cleanupLabel($state)),
@@ -117,7 +117,7 @@ class BunkerPickupReportResource extends Resource
                 TextColumn::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i')->sortable(),
                 TextColumn::make('contractor')->label('Контрагент')->searchable()->sortable(),
                 TextColumn::make('items_count')->label('Бункеров')->counts('items'),
-                TextColumn::make('billing_units')->label('Количество')->sortable(),
+                TextColumn::make('billing_units')->label('Количество')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' '))->sortable(),
                 TextColumn::make('driver_name')->label('Водитель')->placeholder('—')->toggleable(),
                 TextColumn::make('cleanup_status')
                     ->label('Уборка')

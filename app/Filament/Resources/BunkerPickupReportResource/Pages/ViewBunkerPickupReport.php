@@ -15,6 +15,16 @@ class ViewBunkerPickupReport extends ViewRecord
 {
     protected static string $resource = BunkerPickupReportResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Отчёт о вывозе';
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return 'Просмотр';
+    }
+
     protected function getHeaderActions(): array
     {
         return [
