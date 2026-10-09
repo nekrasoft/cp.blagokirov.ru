@@ -38,16 +38,11 @@ class BunkerPickupReportResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Отчёты о вывозе';
 
+    protected static bool $hasTitleCaseModelLabel = false;
+
     protected static string|UnitEnum|null $navigationGroup = 'Вывоз мусора';
 
     protected static ?int $navigationSort = 31;
-
-    public static function getNavigationLabel(): string
-    {
-        return Filament::getCurrentPanel()?->getId() === 'counterparty'
-            ? 'Выполненные вывозы'
-            : static::$navigationLabel;
-    }
 
     public static function infolist(Schema $schema): Schema
     {

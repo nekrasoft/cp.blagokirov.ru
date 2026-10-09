@@ -11,6 +11,11 @@ class ListBunkerPickupReports extends ListRecords
 {
     protected static string $resource = BunkerPickupReportResource::class;
 
+    public function getBreadcrumb(): string
+    {
+        return 'Список';
+    }
+
     public function getTabs(): array
     {
         return [

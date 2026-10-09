@@ -56,7 +56,7 @@ class CounterpartyDashboard extends Dashboard
                 ->visible(fn (): bool => DashboardMetrics::hasTable('bunkers')),
 
             Action::make('requests')
-                ->label('История заявок')
+                ->label('Заявки на вывоз')
                 ->icon(Heroicon::OutlinedClipboardDocumentCheck)
                 ->color('gray')
                 ->url(fn (): string => BunkerFillRequestResource::getUrl('index', ['tab' => 'today'], panel: 'counterparty'))

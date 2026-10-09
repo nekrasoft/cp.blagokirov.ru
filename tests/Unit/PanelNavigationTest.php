@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Filament\Resources\BunkerFillRequestResource\Pages\ListBunkerFillRequests;
 use App\Filament\Resources\BunkerPickupReportResource;
+use App\Filament\Resources\BunkerPickupReportResource\Pages\ListBunkerPickupReports;
 use App\Filament\Resources\BunkerResource;
 use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\WorkResource;
@@ -20,6 +22,8 @@ class PanelNavigationTest extends TestCase
         $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
         Filament::setCurrentPanel($panel);
         $this->assertSame(['Панель', 'Клиенты', 'Вывоз мусора', 'Биллинг', 'Водители'], $panel->getNavigationGroups());
+        $this->assertSame('Заявки на вывоз', (new ListBunkerFillRequests)->getTitle());
+        $this->assertSame('Отчёты о вывозе', (new ListBunkerPickupReports)->getTitle());
         $map = $panel->getNavigationItems()[0];
         $this->assertSame('Вывоз мусора', $map->getGroup());
         $this->assertSame('https://map.example.com', $map->getUrl());
@@ -36,7 +40,9 @@ class PanelNavigationTest extends TestCase
         $this->assertSame(['Вывоз мусора', 'Оплата и документы', 'Обратная связь'], $panel->getNavigationGroups());
         $this->assertSame('Оплата и документы', InvoiceResource::getNavigationGroup());
         $this->assertSame('Оплата и документы', WorkResource::getNavigationGroup());
-        $this->assertSame('Выполненные вывозы', BunkerPickupReportResource::getNavigationLabel());
+        $this->assertSame('Отчёты о вывозе', BunkerPickupReportResource::getNavigationLabel());
+        $this->assertSame('Заявки на вывоз', (new ListBunkerFillRequests)->getTitle());
+        $this->assertSame('Отчёты о вывозе', (new ListBunkerPickupReports)->getTitle());
         $map = $panel->getNavigationItems()[0];
         $this->assertSame('Вывоз мусора', $map->getGroup());
         $this->assertSame(route('billing.sso.map'), $map->getUrl());

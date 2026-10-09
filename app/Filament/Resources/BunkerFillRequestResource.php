@@ -37,9 +37,11 @@ class BunkerFillRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'Заявки на вывоз';
 
-    protected static ?string $modelLabel = 'Заявка на заполнение';
+    protected static ?string $modelLabel = 'Заявка на вывоз';
 
-    protected static ?string $pluralModelLabel = 'История заявок';
+    protected static ?string $pluralModelLabel = 'Заявки на вывоз';
+
+    protected static bool $hasTitleCaseModelLabel = false;
 
     protected static string|UnitEnum|null $navigationGroup = 'Вывоз мусора';
 
