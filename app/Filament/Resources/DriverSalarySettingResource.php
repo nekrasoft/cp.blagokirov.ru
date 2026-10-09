@@ -40,7 +40,7 @@ class DriverSalarySettingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static ?string $navigationLabel = 'ЗП водителей';
+    protected static ?string $navigationLabel = 'Зарплата';
 
     protected static ?string $modelLabel = 'Настройка ЗП водителя';
 

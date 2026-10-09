@@ -22,7 +22,7 @@ class FeedbackPage extends Page
 
     protected static ?string $slug = 'feedback';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Биллинг';
+    protected static string|UnitEnum|null $navigationGroup = 'Обратная связь';
 
     protected static ?int $navigationSort = 90;
 

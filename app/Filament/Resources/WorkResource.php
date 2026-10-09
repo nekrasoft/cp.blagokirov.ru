@@ -52,6 +52,13 @@ class WorkResource extends Resource
 
     protected static array $hasColumnCache = [];
 
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return Filament::getCurrentPanel()?->getId() === 'counterparty'
+            ? 'Оплата и документы'
+            : static::$navigationGroup;
+    }
+
     public static function form(Schema $schema): Schema
     {
         $components = [];

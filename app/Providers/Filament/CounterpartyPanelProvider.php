@@ -50,8 +50,14 @@ class CounterpartyPanelProvider extends PanelProvider
             ->pages([
                 CounterpartyDashboard::class,
             ])
+            ->navigationGroups([
+                'Вывоз мусора',
+                'Оплата и документы',
+                'Обратная связь',
+            ])
             ->navigationItems([
-                NavigationItem::make('Карта бункеров ↗')
+                NavigationItem::make('Открыть карту ↗')
+                    ->group('Вывоз мусора')
                     ->icon(Heroicon::OutlinedMap)
                     ->url(fn (): string => route('billing.sso.map'), true)
                     ->sort(999),

@@ -33,13 +33,15 @@ class DriverContactResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhone;
 
-    protected static ?string $navigationLabel = 'Телефоны водителей';
+    protected static ?string $navigationLabel = 'Контакты';
 
     protected static ?string $modelLabel = 'Контакт водителя';
 
     protected static ?string $pluralModelLabel = 'Телефоны водителей';
 
     protected static string|UnitEnum|null $navigationGroup = 'Водители';
+
+    protected static ?int $navigationSort = 0;
 
     public static function form(Schema $schema): Schema
     {

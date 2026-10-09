@@ -35,13 +35,13 @@ class BunkerFillRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static ?string $navigationLabel = 'История заявок';
+    protected static ?string $navigationLabel = 'Заявки на вывоз';
 
     protected static ?string $modelLabel = 'Заявка на заполнение';
 
     protected static ?string $pluralModelLabel = 'История заявок';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
+    protected static string|UnitEnum|null $navigationGroup = 'Вывоз мусора';
 
     protected static ?int $navigationSort = 30;
 

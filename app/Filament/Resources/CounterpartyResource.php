@@ -46,7 +46,7 @@ class CounterpartyResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Контрагенты';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
+    protected static string|UnitEnum|null $navigationGroup = 'Клиенты';
 
     protected static array $hasColumnCache = [];
 

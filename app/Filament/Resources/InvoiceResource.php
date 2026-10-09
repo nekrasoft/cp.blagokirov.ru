@@ -66,6 +66,13 @@ class InvoiceResource extends Resource
 
     protected static array $hasInvoiceItemsColumnCache = [];
 
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return Filament::getCurrentPanel()?->getId() === 'counterparty'
+            ? 'Оплата и документы'
+            : static::$navigationGroup;
+    }
+
     public static function form(Schema $schema): Schema
     {
         $components = [];

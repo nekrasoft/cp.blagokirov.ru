@@ -48,7 +48,7 @@ class BunkerResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Бункеры';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
+    protected static string|UnitEnum|null $navigationGroup = 'Вывоз мусора';
 
     protected static ?int $navigationSort = 20;
 

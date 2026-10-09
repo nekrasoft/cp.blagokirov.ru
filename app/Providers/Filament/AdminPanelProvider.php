@@ -12,8 +12,10 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -35,9 +37,17 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('БлагоСервис')
             ->navigationGroups([
                 'Панель',
-                'Карта бункеров',
+                'Клиенты',
+                'Вывоз мусора',
                 'Биллинг',
                 'Водители',
+            ])
+            ->navigationItems([
+                NavigationItem::make('Открыть карту ↗')
+                    ->group('Вывоз мусора')
+                    ->icon(Heroicon::OutlinedMap)
+                    ->url(fn (): string => (string) config('services.cross_service_sso.map_service_url'), true)
+                    ->sort(10),
             ])
             ->login()
             ->renderHook(

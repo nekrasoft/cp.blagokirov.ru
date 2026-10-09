@@ -44,7 +44,7 @@ class CounterpartyUserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Пользователи контрагентов';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Карта бункеров';
+    protected static string|UnitEnum|null $navigationGroup = 'Клиенты';
 
     public static function form(Schema $schema): Schema
     {

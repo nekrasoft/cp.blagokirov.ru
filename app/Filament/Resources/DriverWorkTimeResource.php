@@ -42,7 +42,7 @@ class DriverWorkTimeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static ?string $navigationLabel = 'Время водителей';
+    protected static ?string $navigationLabel = 'Учёт времени';
 
     protected static ?string $modelLabel = 'Запись времени водителя';
 
