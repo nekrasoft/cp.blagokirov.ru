@@ -166,6 +166,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 require_cmd "$PHP_BIN"
+require_cmd git
 require_cmd chmod
 require_cmd find
 require_cmd grep
@@ -184,6 +185,12 @@ fi
 if [[ ! -d "$PUBLIC_HTML_DIR" ]]; then
     fail "public_html directory does not exist: $PUBLIC_HTML_DIR"
 fi
+
+[[ "$(git -C "$LARAVEL_DIR" branch --show-current)" == "main" ]] \
+    || fail "Deployment must run from the main branch"
+
+log "Pulling origin/main"
+git -C "$LARAVEL_DIR" pull --ff-only origin main
 
 BUILD_MANIFEST="$LARAVEL_DIR/$BUILD_MANIFEST_RELATIVE_PATH"
 BUILD_FINGERPRINT="$LARAVEL_DIR/$BUILD_FINGERPRINT_RELATIVE_PATH"

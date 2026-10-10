@@ -240,6 +240,8 @@ fingerprint с текущими Filament, Blade, CSS, JS и Vite-входами.
 
 - Laravel-приложение находится в каталоге `laravel`;
 - document root находится рядом в `public_html`;
+- перед проверкой сборки код обновляется через `git pull --ff-only origin main`;
+- запуск разрешён из ветки `main`; при ошибке pull деплой останавливается;
 - `public/` синхронизируется в `public_html/` через `rsync`;
 - `public_html/index.php` автоматически патчится для загрузки
   `../laravel/vendor/autoload.php` и `../laravel/bootstrap/app.php`;
