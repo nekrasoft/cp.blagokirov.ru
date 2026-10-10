@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256:build-source-files-normalized:v2",
-  "fingerprint": "8a849c491597214f9607a694efaead6b2ed9a6d3cd78b9e3fd6b12cbb1ea5167",
+  "fingerprint": "1ad01640f6ad2b5c9eac3a2cc52d65e96e6481fe76388f376eb20d11e7923d2e",
   "files": [
     "app/Filament/Admin/Pages/AdminDashboard.php",
     "app/Filament/Auth/CounterpartyLogin.php",

@@ -121,7 +121,9 @@ class BunkerPickupReportResource extends Resource
             ->defaultSort('completed_at', 'desc')
             ->columns([
                 TextColumn::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i')->sortable(),
-                TextColumn::make('contractor')->label('Контрагент')->searchable()->sortable(),
+                TextColumn::make('contractor')->label('Контрагент')->searchable()->sortable()
+                    ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
+                    ->url(fn (?string $state): ?string => static::counterpartySearchUrl($state)),
                 TextColumn::make('items_count')->label('Бункеров')->counts('items'),
                 TextColumn::make('sheets_status')->label('Запись в Google Sheets')->badge()
                     ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
@@ -230,6 +232,19 @@ class BunkerPickupReportResource extends Resource
             'not_cleaned' => 'Не прибрана',
             default => $status,
         };
+    }
+
+    protected static function counterpartySearchUrl(?string $counterpartyName): ?string
+    {
+        $counterpartyName = trim((string) $counterpartyName);
+
+        if ($counterpartyName === '') {
+            return null;
+        }
+
+        return static::getUrl('index', [
+            'search' => $counterpartyName,
+        ]);
     }
 
     private static function waybillStatus(BunkerPickupReport $record): string
