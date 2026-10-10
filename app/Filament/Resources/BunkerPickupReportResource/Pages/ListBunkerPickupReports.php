@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\BunkerPickupReportResource\Pages;
 
 use App\Filament\Resources\BunkerPickupReportResource;
+use App\Models\CounterpartyUser;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,7 +15,7 @@ class ListBunkerPickupReports extends ListRecords
 
     public function getTabs(): array
     {
-        return [
+        $tabs = [
             'all' => Tab::make('Все'),
             'missing_waybill' => Tab::make('Без обязательного талона')
                 ->query(fn (Builder $query): Builder => $query->where('waybill_required', true)->whereDoesntHave('waybills')),
@@ -22,6 +24,12 @@ class ListBunkerPickupReports extends ListRecords
             'not_cleaned' => Tab::make('Территория не прибрана')
                 ->query(fn (Builder $query): Builder => $query->where('cleanup_status', 'not_cleaned')),
         ];
+
+        if (Filament::auth()->user() instanceof CounterpartyUser) {
+            unset($tabs['pending_delivery']);
+        }
+
+        return $tabs;
     }
 
     protected function getHeaderActions(): array
