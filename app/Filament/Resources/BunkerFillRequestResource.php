@@ -129,16 +129,17 @@ class BunkerFillRequestResource extends Resource
                     ?: static::cancellationReasonOptions()[$record->cancellation_reason_code] ?? null)
                 ->placeholder('—')
                 ->wrap()
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         if (static::hasColumn('filled_at') && static::hasColumn('executed_at') && static::hasColumn('cancelled_at')) {
             $columns[] = TextColumn::make('request_age')
-                ->label('Ожидает')
+                ->label('Время ожидания')
                 ->state(fn (BunkerFillRequest $record): ?string => ! $record->executed_at && ! $record->cancelled_at
                     ? $record->filled_at?->diffForHumans(now(), true)
                     : null)
-                ->placeholder('—');
+                ->placeholder('—')
+                ->toggleable();
         }
 
         $filters = [];
