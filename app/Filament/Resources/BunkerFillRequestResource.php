@@ -139,7 +139,7 @@ class BunkerFillRequestResource extends Resource
                     ? $record->filled_at?->diffForHumans(now(), true)
                     : null)
                 ->placeholder('—')
-                ->toggleable();
+                ->toggleable(isToggledHiddenByDefault: true);
         }
 
         $filters = [];
