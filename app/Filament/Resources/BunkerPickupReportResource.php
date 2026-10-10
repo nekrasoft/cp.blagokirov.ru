@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BunkerPickupReportResource\Pages\ListBunkerPickupReports;
 use App\Filament\Resources\BunkerPickupReportResource\Pages\ViewBunkerPickupReport;
+use App\Filament\Resources\Concerns\PreservesNavigationSearch;
 use App\Filament\Support\BunkerPickupReportScope;
 use App\Models\BunkerPickupFile;
 use App\Models\BunkerPickupReport;
@@ -27,6 +28,8 @@ use UnitEnum;
 
 class BunkerPickupReportResource extends Resource
 {
+    use PreservesNavigationSearch;
+
     protected static ?string $model = BunkerPickupReport::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCamera;
