@@ -125,6 +125,7 @@ class BunkerPickupReportResource extends Resource
             ->columns([
                 TextColumn::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i')->sortable(),
                 TextColumn::make('contractor')->label('Контрагент')->searchable()->sortable()
+                    ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
                     ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
                     ->url(fn (?string $state): ?string => static::counterpartySearchUrl($state)),
                 TextColumn::make('items_count')->label('Бункеров')->counts('items'),
