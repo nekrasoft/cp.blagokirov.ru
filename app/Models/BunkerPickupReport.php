@@ -18,6 +18,9 @@ class BunkerPickupReport extends Model
         'counterparty_id' => 'integer',
         'waybill_required' => 'boolean',
         'billing_units' => 'decimal:2',
+        'trips_count' => 'integer',
+        'trip_volume_m3' => 'decimal:2',
+        'cash_income' => 'decimal:2',
         'completed_at' => 'datetime',
         'created_at' => 'datetime',
     ];

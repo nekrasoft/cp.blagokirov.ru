@@ -20,11 +20,19 @@ class BunkerPickupReportScope
             return $query;
         }
 
-        return $query->whereHas('items.request', function (Builder $requestQuery) use ($districts): void {
-            $requestQuery->where(function (Builder $districtQuery) use ($districts): void {
-                foreach ($districts as $district) {
-                    $districtQuery->orWhereRaw('LOWER(district) LIKE ?', ['%'.mb_strtolower($district).'%']);
-                }
+        return $query->where(function (Builder $reports) use ($districts): void {
+            $reports->whereHas('items.request', function (Builder $requestQuery) use ($districts): void {
+                $requestQuery->where(function (Builder $districtQuery) use ($districts): void {
+                    foreach ($districts as $district) {
+                        $districtQuery->orWhereRaw('LOWER(district) LIKE ?', ['%'.mb_strtolower($district).'%']);
+                    }
+                });
+            })->orWhere(function (Builder $trips) use ($districts): void {
+                $trips->where('report_type', 'trip')->where(function (Builder $locations) use ($districts): void {
+                    foreach ($districts as $district) {
+                        $locations->orWhereRaw('LOWER(district) LIKE ?', ['%'.mb_strtolower($district).'%']);
+                    }
+                });
             });
         });
     }

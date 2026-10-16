@@ -51,6 +51,7 @@ class BunkerPickupReportResource extends Resource
         return $schema->components([
             Section::make('Вывоз')
                 ->schema([
+                    TextEntry::make('report_type')->label('Тип вывоза')->formatStateUsing(fn (?string $state): string => $state === 'trip' ? 'Ходка' : 'Бункеры'),
                     TextEntry::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i'),
                     TextEntry::make('contractor')->label('Контрагент'),
                     TextEntry::make('driver_name')->label('Водитель')->placeholder('Не указан'),
@@ -73,7 +74,17 @@ class BunkerPickupReportResource extends Resource
                 ])
                 ->columns(2)
                 ->columnSpanFull(),
+            Section::make('Ходки')
+                ->visible(fn (BunkerPickupReport $record): bool => $record->report_type === 'trip')
+                ->schema([
+                    TextEntry::make('trips_count')->label('Количество ходок'),
+                    TextEntry::make('trip_volume_m3')->label('Общий объём, м³')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' ')),
+                    TextEntry::make('district')->label('Район')->placeholder('—'),
+                    TextEntry::make('address')->label('Площадка'),
+                    TextEntry::make('cash_income')->label('Получено наличными')->money('RUB')->visible(fn (BunkerPickupReport $record): bool => $record->cash_income !== null),
+                ])->columns(2)->columnSpanFull(),
             Section::make('Бункеры')
+                ->visible(fn (BunkerPickupReport $record): bool => $record->report_type !== 'trip')
                 ->schema([
                     ViewEntry::make('items')
                         ->hiddenLabel()
@@ -128,7 +139,11 @@ class BunkerPickupReportResource extends Resource
                     ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
                     ->color(fn (?string $state): string => filled($state) ? 'primary' : 'gray')
                     ->url(fn (?string $state): ?string => static::counterpartySearchUrl($state)),
-                TextColumn::make('items_count')->label('Бункеров')->counts('items'),
+                TextColumn::make('report_type')->label('Тип')->formatStateUsing(fn (?string $state): string => $state === 'trip' ? 'Ходка' : 'Бункеры')->badge(),
+                TextColumn::make('items_count')->label('Бункеров')->counts('items')
+                    ->formatStateUsing(fn ($state, BunkerPickupReport $record): string => $record->report_type === 'trip' ? '—' : (string) $state),
+                TextColumn::make('trips_count')->label('Ходок')->placeholder('—'),
+                TextColumn::make('trip_volume_m3')->label('Объём ходок, м³')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('sheets_status')->label('Запись в Google Sheets')->badge()
                     ->visible(fn (): bool => ! (Filament::auth()->user() instanceof CounterpartyUser))
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -141,7 +156,7 @@ class BunkerPickupReportResource extends Resource
                     ->label('Уборка')
                     ->formatStateUsing(fn (string $state): string => static::cleanupLabel($state))
                     ->badge()
-                    ->color(fn (string $state): string => $state === 'not_cleaned' ? 'danger' : 'success'),
+                    ->color(fn (string $state): string => $state === 'not_cleaned' ? 'danger' : ($state === 'not_recorded' ? 'gray' : 'success')),
                 TextColumn::make('site_photos_count')->label('Фото')
                     ->formatStateUsing(fn ($state): string => (int) $state > 0 ? (string) $state : '—')
                     ->toggleable(),
@@ -234,6 +249,7 @@ class BunkerPickupReportResource extends Resource
             'cleaned' => 'Прибрана',
             'not_required' => 'Не требовалась',
             'not_cleaned' => 'Не прибрана',
+            'not_recorded' => 'Не отмечалась',
             default => $status,
         };
     }
