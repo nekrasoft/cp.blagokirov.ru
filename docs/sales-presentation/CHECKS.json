@@ -1,0 +1,24 @@
+{
+  "checked_on": "2026-10-16",
+  "tool": "Playwright 1.59.1 with headless Chrome",
+  "html_slides": 17,
+  "pdf_pages": 19,
+  "viewports_px": [
+    1600,
+    1366,
+    390
+  ],
+  "external_requests": 0,
+  "javascript_errors": [],
+  "print_overflows": [],
+  "checks": [
+    "all embedded images loaded",
+    "no horizontal overflow at tested widths",
+    "contents navigation",
+    "keyboard navigation",
+    "image zoom and Escape",
+    "three mail tabs and tab keyboard navigation",
+    "PDF includes both extra mail examples",
+    "no login credentials or real recipient email addresses in HTML"
+  ]
+}
