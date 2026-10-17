@@ -55,7 +55,7 @@ class BunkerPickupReportResource extends Resource
                     TextEntry::make('completed_at')->label('Дата')->dateTime('d.m.Y H:i'),
                     TextEntry::make('contractor')->label('Контрагент'),
                     TextEntry::make('driver_name')->label('Водитель')->placeholder('Не указан'),
-                    TextEntry::make('billing_units')->label('Количество к оплате')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' ')),
+                    TextEntry::make('billing_units')->label(fn (BunkerPickupReport $record): string => $record->report_type === 'trip' ? 'Количество ходок' : 'Количество к оплате')->formatStateUsing(fn ($state): string => number_format((float) $state, 2, ',', ' ')),
                     TextEntry::make('cleanup_status')
                         ->label('Уборка')
                         ->formatStateUsing(fn (string $state): string => static::cleanupLabel($state)),

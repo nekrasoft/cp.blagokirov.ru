@@ -190,6 +190,14 @@ class WorkResource extends Resource
                 ->sortable();
         }
 
+        if (static::hasColumn('volume')) {
+            $columns[] = TextColumn::make('volume')->label('Объём, м³')->numeric(decimalPlaces: 2);
+        }
+        if (static::hasColumn('tariff')) {
+            $columns[] = TextColumn::make('tariff')->label('Тариф')
+                ->formatStateUsing(fn ($state, Work $record): string => $state === null ? '—' : number_format((float) $state, 2, ',', ' ').' ₽/'.$record->billing_unit);
+        }
+
         if (static::hasColumn('revenue')) {
             $columns[] = TextColumn::make('revenue')
                 ->label('Сумма')

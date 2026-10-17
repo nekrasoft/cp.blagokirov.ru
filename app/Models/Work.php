@@ -20,6 +20,8 @@ class Work extends Model
         'object_count',
         'volume',
         'revenue',
+        'billing_unit',
+        'tariff',
         'sheet_row_hash',
         'invoice_id',
         'created_at',
@@ -29,6 +31,7 @@ class Work extends Model
         'date' => 'date',
         'volume' => 'decimal:2',
         'revenue' => 'decimal:2',
+        'tariff' => 'decimal:2',
         'invoice_id' => 'integer',
         'created_at' => 'datetime',
     ];
