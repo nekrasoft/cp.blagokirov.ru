@@ -59,6 +59,7 @@ return [
 
     'bitrix24' => [
         'base_url' => env('BITRIX24_BASE_URL'),
+        'task_webhook_url' => env('BITRIX24_TASK_WEBHOOK_URL'),
     ],
 
 ];

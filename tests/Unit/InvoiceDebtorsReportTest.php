@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Filament\Resources\InvoiceResource\Pages\ListInvoiceDebtors;
 use App\Filament\Support\DashboardMetrics;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +108,30 @@ class InvoiceDebtorsReportTest extends TestCase
         $migration->down();
 
         $this->assertFalse(Schema::hasIndex('invoices', ['status', 'counterparty_id']));
+    }
+
+    public function test_debtor_action_resolves_counterparty_id_instead_of_invoice_id(): void
+    {
+        DB::table('counterparties')->insert([
+            ['id' => 10, 'short_name' => 'Альфа'],
+            ['id' => 20, 'short_name' => 'Бета'],
+        ]);
+        DB::table('invoices')->insert([
+            ['id' => 1, 'counterparty_id' => 10, 'status' => 'issued', 'paid_amount' => 100],
+            ['id' => 10, 'counterparty_id' => 20, 'status' => 'issued', 'paid_amount' => 200],
+            ['id' => 2, 'counterparty_id' => 10, 'status' => 'issued', 'paid_amount' => 300],
+        ]);
+
+        $page = new ListInvoiceDebtors;
+        $method = (new ReflectionClass($page))->getMethod('resolveTableRecord');
+        $record = $method->invoke($page, '10');
+
+        $this->assertNotNull($record);
+        $this->assertSame(10, $record->counterparty_id);
+        $this->assertSame('Альфа', $record->counterparty->short_name);
+        $this->assertSame(2, (int) $record->getAttribute('unpaid_invoices_count'));
+        $this->assertNull($method->invoke($page, '999'));
+        $this->assertNull($method->invoke($page, '0'));
     }
 
     private function flushDashboardMetricsSchemaCache(): void

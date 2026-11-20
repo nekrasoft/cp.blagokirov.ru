@@ -291,6 +291,11 @@ Vite собирает три entrypoint:
 fingerprint с текущими Filament, Blade, CSS, JS и Vite-входами. Если менялись
 эти файлы, коммитьте обновленный `public/build/` вместе с исходниками.
 
+В разделе «Топ-должники» действие «Запросить акт сверки» создаёт задачу
+бухгалтерии в Б24 с привязкой к компании из `bitrix_company_id` и почтой из
+`email`. Для него задайте `BITRIX24_TASK_WEBHOOK_URL` (базовый URL webhook,
+как в `tbank-service`). Действие доступно администраторам с правом записи.
+
 ## Deploy
 
 `deploy.sh` рассчитан на shared hosting со split layout:

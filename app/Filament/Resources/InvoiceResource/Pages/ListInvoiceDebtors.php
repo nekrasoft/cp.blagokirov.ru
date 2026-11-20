@@ -5,12 +5,17 @@ namespace App\Filament\Resources\InvoiceResource\Pages;
 use App\Filament\Resources\InvoiceResource;
 use App\Filament\Support\DashboardMetrics;
 use App\Models\Invoice;
+use App\Models\User;
+use App\Services\BitrixReconciliationTaskService;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 
 class ListInvoiceDebtors extends ListRecords
 {
@@ -32,7 +37,7 @@ class ListInvoiceDebtors extends ListRecords
         return 'Топ-должники';
     }
 
-    public function getTitle(): string | Htmlable
+    public function getTitle(): string|Htmlable
     {
         return static::$title;
     }
@@ -80,6 +85,34 @@ class ListInvoiceDebtors extends ListRecords
                     ->label('Счета')
                     ->icon('heroicon-m-list-bullet')
                     ->url(fn (Invoice $record): string => $this->unpaidInvoicesUrl($record)),
+                Action::make('requestReconciliation')
+                    ->label('Запросить акт сверки')
+                    ->icon('heroicon-m-document-text')
+                    ->visible(fn (): bool => $this->canRequestReconciliation())
+                    ->disabled(fn (Invoice $record): bool => ! $record->counterparty_id)
+                    ->requiresConfirmation()
+                    ->modalHeading('Запросить акт сверки')
+                    ->modalDescription(fn (Invoice $record): string => 'Создать задачу бухгалтерии по контрагенту «'.$this->counterpartyName($record).'»?')
+                    ->action(function (Invoice $record): void {
+                        abort_unless($this->canRequestReconciliation(), 403);
+
+                        $counterparty = $record->counterparty;
+                        abort_unless($counterparty, 404);
+
+                        try {
+                            $taskId = app(BitrixReconciliationTaskService::class)->create($counterparty);
+                        } catch (ValidationException $exception) {
+                            Notification::make()->title(collect($exception->errors())->flatten()->first())->danger()->send();
+
+                            return;
+                        } catch (\RuntimeException $exception) {
+                            Notification::make()->title($exception->getMessage())->danger()->send();
+
+                            return;
+                        }
+
+                        Notification::make()->title('Задача Б24 №'.$taskId.' создана')->success()->send();
+                    }),
             ])
             ->paginationPageOptions([10, 25, 50])
             ->emptyStateIcon('heroicon-o-check-circle')
@@ -103,6 +136,16 @@ class ListInvoiceDebtors extends ListRecords
             ?? Invoice::query()->whereRaw('1 = 0');
     }
 
+    protected function resolveTableRecord(?string $key): ?Invoice
+    {
+        if ($key === null || ! ctype_digit($key) || (int) $key <= 0) {
+            return null;
+        }
+
+        // Строки отчёта используют ID контрагента, а не ID отдельного счёта.
+        return $this->getTableQuery()->where('invoices.counterparty_id', (int) $key)->first();
+    }
+
     private function counterpartyName(Invoice $record): string
     {
         $counterparty = $record->relationLoaded('counterparty') ? $record->counterparty : null;
@@ -118,6 +161,15 @@ class ListInvoiceDebtors extends ListRecords
         return $record->counterparty_id
             ? 'Контрагент #'.$record->counterparty_id
             : 'Без контрагента';
+    }
+
+    private function canRequestReconciliation(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return ! DashboardMetrics::currentCounterpartyUser()
+            && $user instanceof User
+            && $user->canWriteAdminPanel();
     }
 
     private function unpaidInvoicesUrl(Invoice $record): string
